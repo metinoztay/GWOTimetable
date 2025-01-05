@@ -44,6 +44,7 @@ namespace GWOTimetable.Controllers
 
             string hashPassword = Utilities.CreateHash(user.PasswordHash);
             var userInformations = _context.Users.Include(u => u.Role).Where(u => u.Email == user.Email && u.PasswordHash == hashPassword).FirstOrDefault();
+            var workspace = _context.Workspaces.Where(u => u.UserId == userInformations.UserId).OrderByDescending(u => u.CreatedAt).ToList();
 
             if (userInformations != null) //kullanıcı bulundu
             {
@@ -55,6 +56,7 @@ namespace GWOTimetable.Controllers
                     new Claim(ClaimTypes.Role,userInformations.Role.RoleName),
                     new Claim("UserId",userInformations.UserId.ToString()),
                     new Claim("PhotoUrl",userInformations.PhotoUrl),
+                    new Claim("WorkspaceId",workspace[0].WorkspaceId.ToString()),
                 };
                 var userIdentity = new ClaimsIdentity(claims, "Login"); //kullanıcı kimliği oluşturuldu
 
@@ -67,8 +69,11 @@ namespace GWOTimetable.Controllers
                         ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(30) // Oturum süresi
                     });
 
-                return Ok(new { RedirectUrl = $"/Home/Index" });
-
+                return Ok(new
+                {
+                    redirectUrl = Url.Action("Index", "Home", new { WorkspaceId = workspace[0].WorkspaceId.ToString() }),
+                    message = "Login success!"
+                });
             }
 
             return BadRequest(new { message = "Invalid email or password!" });
