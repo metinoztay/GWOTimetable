@@ -23,6 +23,8 @@ public partial class User
 
     public bool IsVerified { get; set; }
 
+    public string PhotoUrl { get; set; } = null!;
+
     public virtual Role Role { get; set; } = null!;
 
     public virtual ICollection<VerificationCode> VerificationCodes { get; set; } = new List<VerificationCode>();

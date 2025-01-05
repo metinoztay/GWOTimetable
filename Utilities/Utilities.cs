@@ -1,0 +1,40 @@
+
+using System.Security.Cryptography;
+using System.Text;
+public static class Utilities
+{
+    public static string CreateHash(string password)
+    {
+
+        MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
+        byte[] tempString = Encoding.UTF8.GetBytes(password);
+        tempString = md5.ComputeHash(tempString);
+        StringBuilder sb = new StringBuilder();
+
+        foreach (byte ba in tempString)
+        {
+            sb.Append(ba.ToString("x2").ToLower());
+        }
+
+        return sb.ToString();
+    }
+
+    public static string GeneratePassword(int length = 12)
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+                             "abcdefghijklmnopqrstuvwxyz" +
+                             "0123456789" +
+                             "!@#$%&*()_+=.?";
+
+        Random rand = new Random();
+
+        char[] passwordChars = new char[length];
+
+        for (int i = 0; i < length; i++)
+        {
+            passwordChars[i] = chars[rand.Next(chars.Length)];
+        }
+
+        return new string(passwordChars);
+    }
+}

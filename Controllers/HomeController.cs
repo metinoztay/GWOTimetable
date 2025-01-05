@@ -1,33 +1,27 @@
 using System.Diagnostics;
+using System.Security.Claims;
 using GWOTimetable.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GWOTimetable.Controllers
 {
+    [Authorize(Roles = "User")]
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly Db12026Context _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController()
         {
-            _logger = logger;
+            _context = new Db12026Context();
         }
 
         public IActionResult Index()
         {
             return View();
         }
-
-
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
     }
 }
+

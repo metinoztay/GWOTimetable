@@ -1,0 +1,149 @@
+@{
+    ViewData["Title"] = "Login";
+    Layout = null;
+}
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Sign in to GWO Timetable</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Font Awesome (CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- CSS files -->
+    <link href="~/ThemeData/Tabler/dist/css/tabler.min.css" rel="stylesheet" />
+    <link href="~/ThemeData/Tabler/dist/css/tabler-flags.min.css" rel="stylesheet" />
+    <link href="~/ThemeData/Tabler/dist/css/tabler-payments.min.css" rel="stylesheet" />
+    <link href="~/ThemeData/Tabler/dist/css/tabler-vendors.min.css" rel="stylesheet" />
+    <link href="~/ThemeData/Tabler/dist/css/demo.min.css" rel="stylesheet" />
+    <link href="https://rsms.me/inter/inter.css" rel="stylesheet" crossorigin="anonymous">
+</head>
+
+<body class="d-flex flex-column">
+    <script src="~/ThemeData/Tabler/dist/js/demo-theme.min.js"></script>
+    <div class="page page-center">
+        <div class="container container-normal py-4">
+            <div class="row align-items-center g-4">
+                <div class="col-lg">
+                    <div class="container-tight">
+                        <div class="text-center mb-4">
+                            <a href="@Url.Action("Login","Account")" class="navbar-brand navbar-brand-autodark"><img
+                                    src="~/ThemeData/Tabler/static/logo.svg" height="36" alt=""></a>
+                        </div>
+                        <div class="card card-md">
+                            <div class="card-body">
+                                <h2 class="h2 text-center mb-4">Login to your account</h2>
+                                <div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Email address</label>
+                                        <input type="email" class="form-control" id="email" placeholder="your@email.com"
+                                            autocomplete="off">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">
+                                            Password
+                                            <span class="form-label-description">
+                                                <a href="@Url.Action("ForgotPassword","Account")">I forgot password</a>
+                                            </span>
+                                        </label>
+                                        <div class="input-group input-group-flat">
+                                            <input type="password" id="password" class="form-control"
+                                                placeholder="Your password" autocomplete="off">
+                                            <span class="input-group-text">
+                                                <a href="#" class="link-secondary" title="Show password"
+                                                    data-bs-toggle="tooltip"><i class="fa-solid fa-eye"></i>
+                                                </a>
+                                            </span>
+                                        </div>
+                                        <script>
+
+                                        </script>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-check">
+                                            <input type="checkbox" class="form-check-input" />
+                                            <span class="form-check-label">Remember me on this device</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-footer">
+                                        <button type="button" class="btn btn-primary w-100" id="loginButton">Sign
+                                            in</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="hr-text">or</div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col"><a href="#" class="btn w-100">
+                                            <i class="fab fa-github text-github"></i>
+                                            &nbsp;Login with Github
+                                        </a></div>
+                                    <div class="col"><a href="#" class="btn w-100">
+                                            <i class="fab fa-twitter text-twitter"></i>
+                                            &nbsp; Login with Twitter
+                                        </a></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center text-secondary mt-3">
+                            Don't have account yet? <a href="@Url.Action("Signup", "Account")" tabindex="-1">Sign up</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg d-none d-lg-block">
+                    <img src="~/ThemeData/Tabler/static/calendar.png" class="d-block mx-auto" alt="">
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Libs JS -->
+    <!-- Tabler Core -->
+    <script src="~/ThemeData/Tabler/dist/js/tabler.min.js"></script>
+    <script src="~/ThemeData/Tabler/dist/js/demo.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $('#loginButton').click(function () {
+            var Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000
+            });
+
+            var userData = {
+                Email: $('#email').val(),
+                PasswordHash: $('#password').val()
+            };
+
+            $.ajax({
+                url: '@Url.Action("Login", "Account")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(userData),
+                success: function (response) {
+                    window.location.href = response.redirectUrl;
+                },
+                error: function (xhr, status, error) {
+                    var errorMessage = "An unknown error occurred."; // varsayılan
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+
+                    Toast.fire({
+                        icon: 'error',
+                        title: errorMessage
+                    });
+                }
+            });
+
+        });
+
+    </script>
+</body>
+
+</html>

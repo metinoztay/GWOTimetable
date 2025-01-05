@@ -1,4 +1,5 @@
 using GWOTimetable.Models;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,13 @@ using (var context = new Db12026Context())
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    })
+    .AddCookie();
 
 var app = builder.Build();
 
@@ -39,10 +47,11 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseAuthorization();
+app.UseAuthentication(); // Kimlik doğrulama middleware'i
+app.UseAuthorization();  // Yetkilendirme middleware'i
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
+    pattern: "{controller=Account}/{action=Login}");
+//pattern: "{controller=Account}/{action=Login}/{id?}");
 app.Run();

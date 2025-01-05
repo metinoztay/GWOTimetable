@@ -51,19 +51,9 @@ public partial class Db12026Context : DbContext
 
     public virtual DbSet<Workspace> Workspaces { get; set; }
 
-
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            var configuration = new ConfigurationManager();
-            configuration.SetBasePath(Directory.GetCurrentDirectory());
-            configuration.AddJsonFile("appsettings.json");
-
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            optionsBuilder.UseSqlServer(connectionString);
-        }
-    }
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=db12026.public.databaseasp.net; Database=db12026; User Id=db12026; Password=qQ_53=pEJa4#; Encrypt=True; TrustServerCertificate=True; MultipleActiveResultSets=True;Connection Timeout=30");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -413,6 +403,9 @@ public partial class Db12026Context : DbContext
                 .HasMaxLength(32)
                 .IsUnicode(false)
                 .IsFixedLength();
+            entity.Property(e => e.PhotoUrl)
+                .HasMaxLength(250)
+                .IsUnicode(false);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)

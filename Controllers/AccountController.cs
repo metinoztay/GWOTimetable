@@ -1,0 +1,184 @@
+using System.Diagnostics;
+using System.Security.Claims;
+using GWOTimetable.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Text.RegularExpressions;
+
+
+namespace GWOTimetable.Controllers
+{
+    public class AccountController : Controller
+    {
+        private readonly Db12026Context _context;
+
+        public AccountController()
+        {
+            _context = new Db12026Context();
+        }
+
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login([FromBody] User user)
+        {
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                return BadRequest(new { message = "Email can not be empty!" });
+            }
+            var emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(user.Email.Trim(), emailRegex))
+            {
+                return BadRequest(new { message = "Invalid email format!" });
+            }
+            if (string.IsNullOrWhiteSpace(user.PasswordHash))
+            {
+                return BadRequest(new { message = "Password cannot be empty!" });
+            }
+
+
+            string hashPassword = Utilities.CreateHash(user.PasswordHash);
+            var userInformations = _context.Users.Include(u => u.Role).Where(u => u.Email == user.Email && u.PasswordHash == hashPassword).FirstOrDefault();
+
+            if (userInformations != null) //kullanıcı bulundu
+            {
+                var claims = new List<Claim>()
+                {
+                    new Claim("Email",userInformations.Email),
+                    new Claim("FirstName",userInformations.FirstName),
+                    new Claim("LastName",userInformations.LastName),
+                    new Claim(ClaimTypes.Role,userInformations.Role.RoleName),
+                    new Claim("UserId",userInformations.UserId.ToString()),
+                    new Claim("PhotoUrl",userInformations.PhotoUrl),
+                };
+                var userIdentity = new ClaimsIdentity(claims, "Login"); //kullanıcı kimliği oluşturuldu
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(userIdentity),
+                    new AuthenticationProperties
+                    {
+                        IsPersistent = true, // Kalıcı oturum açma
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(30) // Oturum süresi
+                    });
+
+                return Ok(new { RedirectUrl = $"/Home/Index" });
+
+            }
+
+            return BadRequest(new { message = "Invalid email or password!" });
+        }
+
+
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Login", "Account");
+        }
+
+        public IActionResult Signup()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Signup([FromBody] User user)
+        {
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                return BadRequest(new { message = "Email can not be empty!" });
+            }
+            var emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(user.Email.Trim(), emailRegex))
+            {
+                return BadRequest(new { message = "Invalid email format!" });
+            }
+            if (string.IsNullOrWhiteSpace(user.PasswordHash))
+            {
+                return BadRequest(new { message = "Password cannot be empty!" });
+            }
+
+
+            if (_context.Users.Any(u => u.Email == user.Email.Trim()))
+            {
+                return BadRequest(new { message = "Email is already in use!" });
+            }
+
+            string hashPassword = Utilities.CreateHash(user.PasswordHash);
+            user.PasswordHash = hashPassword;
+
+            user.RoleId = 1;
+            user.IsVerified = false;
+            user.PhotoUrl = "https://t4.ftcdn.net/jpg/03/49/49/79/360_F_349497933_Ly4im8BDmHLaLzgyKg2f2yZOvJjBtlw5.jpg";
+            user.LastName = user.LastName.Trim();
+            user.FirstName = user.FirstName.Trim();
+            user.Email = user.Email.Trim();
+            user.CreatedAt = DateTime.Now;
+
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
+
+            Workspace workspace = new Workspace();
+            workspace.UserId = user.UserId;
+            workspace.WorkspaceName = "Default Workspace";
+            workspace.Description = "Default Workspace for " + user.FirstName + " " + user.LastName;
+            workspace.CreatedAt = DateTime.Now;
+            await _context.Workspaces.AddAsync(workspace);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { RedirectUrl = $"/Account/Login" });
+        }
+
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> SendPassword([FromBody] User user)
+        {
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                return BadRequest(new { message = "Email can not be empty!" });
+            }
+            var emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(user.Email.Trim(), emailRegex))
+            {
+                return BadRequest(new { message = "Invalid email format!" });
+            }
+
+            if (!_context.Users.Any(u => u.Email == user.Email.Trim()))
+            {
+                return BadRequest(new { message = "Email cannot be found!" });
+            }
+
+            User userInformations = _context.Users.Where(u => u.Email == user.Email.Trim()).FirstOrDefault();
+
+            if (userInformations.UpdatedAt != null)
+            {
+                if (userInformations.UpdatedAt.Value.AddMinutes(5) > DateTime.Now)
+                {
+                    return BadRequest(new { message = "You can not send password again in 5 minutes!" });
+                }
+            }
+
+            string tempPwd = Utilities.GeneratePassword(8);
+            string hashPassword = Utilities.CreateHash(tempPwd);
+            userInformations.PasswordHash = hashPassword;
+            userInformations.UpdatedAt = DateTime.Now;
+
+            _context.Entry(userInformations).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            //burada temp pwd email gönderim yapılacak
+
+            return Ok(new { RedirectUrl = $"/Account/Login" });
+        }
+    }
+}
