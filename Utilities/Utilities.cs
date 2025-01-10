@@ -37,4 +37,13 @@ public static class Utilities
 
         return new string(passwordChars);
     }
+
+
+    public static string ToProperCase(string str)
+    {
+        if (string.IsNullOrEmpty(str))
+            return str;
+
+        return string.Concat(str.Select((x, i) => i == 0 || char.IsWhiteSpace(str[i - 1]) ? char.ToUpper(x) : char.ToLower(x)));
+    }
 }

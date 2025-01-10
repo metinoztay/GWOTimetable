@@ -110,7 +110,7 @@
         $('#loginButton').click(function () {
             var Toast = Swal.mixin({
                 toast: true,
-                position: 'top-end',
+                position: 'top',
                 showConfirmButton: false,
                 timer: 2000
             });
@@ -129,14 +129,18 @@
                     window.location.href = response.redirectUrl;
                 },
                 error: function (xhr, status, error) {
-                    var errorMessage = "An unknown error occurred."; // varsayılan
+                    var errorMessage = "Please check your email and password."; // varsayılan
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMessage = xhr.responseJSON.message;
                     }
 
                     Toast.fire({
                         icon: 'error',
-                        title: errorMessage
+                        title: errorMessage,
+                        width: `${errorMessage.length * 14}px`,
+                        customClass: {
+                            title: 'text-center'
+                        }
                     });
                 }
             });

@@ -130,7 +130,7 @@
             <a asp-action="Index" asp-controller="Home" class="brand-link">
                 <img src="~/ThemeData/AdminLTE/dist/img/AdminLTELogo.png" alt="AdminLTE Logo"
                     class="brand-image img-circle elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light">AdminLTE 31</span>
+                <span class="brand-text font-weight-light"><b>GWO</b> TimeTable</span>
             </a>
 
             <!-- Sidebar -->
@@ -244,6 +244,7 @@
 
     <script src="~/ThemeData/AdminLTE/plugins/bootstrap4-duallistbox/jquery.bootstrap-duallistbox.min.js"></script>
     <script src="~/ThemeData/AdminLTE/plugins/select2/js/select2.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(function () {
             //Initialize Select2 Elements
@@ -261,6 +262,7 @@
             window.location.href = '@Url.Action("Index", "Home")' + '?WorkspaceId=' + workspaceId;
         });
     </script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 
 </html>

@@ -92,8 +92,13 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Signup([FromBody] User user)
+        public async Task<IActionResult> Signup([FromBody] User user, [FromQuery] bool isTermConfirmed)
         {
+            if (string.IsNullOrWhiteSpace(user.FirstName) || string.IsNullOrWhiteSpace(user.LastName))
+            {
+                return BadRequest(new { message = "First name and last name cannot be empty!" });
+            }
+
             if (string.IsNullOrWhiteSpace(user.Email))
             {
                 return BadRequest(new { message = "Email can not be empty!" });
@@ -108,10 +113,14 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Password cannot be empty!" });
             }
 
-
             if (_context.Users.Any(u => u.Email == user.Email.Trim()))
             {
                 return BadRequest(new { message = "Email is already in use!" });
+            }
+
+            if (!isTermConfirmed)
+            {
+                return BadRequest(new { message = "Please read and accept terms and policy!" });
             }
 
             string hashPassword = Utilities.CreateHash(user.PasswordHash);
@@ -119,10 +128,10 @@ namespace GWOTimetable.Controllers
 
             user.RoleId = 1;
             user.IsVerified = false;
-            user.PhotoUrl = "https://t4.ftcdn.net/jpg/03/49/49/79/360_F_349497933_Ly4im8BDmHLaLzgyKg2f2yZOvJjBtlw5.jpg";
-            user.LastName = user.LastName.Trim();
-            user.FirstName = user.FirstName.Trim();
-            user.Email = user.Email.Trim();
+            user.PhotoUrl = $"{Request.Scheme}://{Request.Host}/ThemeData/defaultAvatar.jpg";
+            user.LastName = Utilities.ToProperCase(user.LastName.Trim());
+            user.FirstName = Utilities.ToProperCase(user.FirstName.Trim());
+            user.Email = user.Email.Trim().ToLower();
             user.CreatedAt = DateTime.Now;
 
             await _context.Users.AddAsync(user);
