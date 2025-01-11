@@ -1,5 +1,8 @@
 ﻿@using GWOTimetable.Models;
-@model IEnumerable<Workspace>;
+@using System.Security.Claims;
+@{
+}
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -12,7 +15,6 @@
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
-    <!-- Mevcut CSS linklerinize ek olarak Font Awesome CDN linki ekleyin -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
         integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -32,26 +34,11 @@
                 <li class="nav-item">
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
                 </li>
-                <!-- SidebarSearch Form -->
                 <li class="nav-item">
-                    <select id="workspace" class="form-control select2bs4 select2-hidden-accessible"
-                        style="width: 430px;" data-select2-id="17" tabindex="-1" aria-hidden="true">
-                        @foreach (var ws in Model)
-                        {
-                            if (ViewBag.SelectedWorkspaceId == @ws.WorkspaceId)
-                            {
-                                <option selected="selected" value="@ws.WorkspaceId">
-                                    @ws.WorkspaceName</option>
-                            }
-                            else
-                            {
-                                <option value="@ws.WorkspaceId">
-                                    @ws.WorkspaceName</option>
-                            }
-
-                        }
-                    </select>
+                    <div id="workspaceContainer"> </div>
                 </li>
+
+
             </ul>
 
             <!-- Right navbar links -->
@@ -148,39 +135,68 @@
                         <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
                         <li class="nav-item">
-                            <a href="#" class="nav-link">
+                            <a href="#" class="nav-link" id="Dashboard">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>
                                     Dashboard
-                                    <i class="right fas fa-angle-left"></i>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="../../index.html" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>Dashboard v1</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="../../index2.html" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>Dashboard v2</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="../../index3.html" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>Dashboard v3</p>
-                                    </a>
-                                </li>
-                            </ul>
+                        </li>
+                        <li class="nav-header">FORMATİON</li>
+                        <li class="nav-item">
+                            <a href="../widgets.html" class="nav-link" id="Lessons">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>
+                                    Lessons
+                                </p>
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a href="../widgets.html" class="nav-link active">
-                                <i class="nav-icon fas fa-th"></i>
+                            <a href="../widgets.html" class="nav-link" id="Classes">
+                                <i class="nav-icon fas fa-chalkboard-teacher"></i>
                                 <p>
-                                    Widgets
+                                    Classes
+                                </p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../widgets.html" class="nav-link" id="Classrooms">
+                                <i class="nav-icon fas fa-university"></i>
+                                <p>
+                                    Classrooms
+                                </p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../widgets.html" class="nav-link" id="Educators">
+                                <i class="nav-icon fas fa-user-tie"></i>
+                                <p>
+                                    Educators
+                                </p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../widgets.html" class="nav-link" id="TimeSettings">
+                                <i class="nav-icon fas fa-clock"></i>
+                                <p>
+                                    Time Settings
+                                </p>
+                            </a>
+                        </li>
+                        <li class="nav-header">BİNDİNG</li>
+                        <li class="nav-item">
+                            <a href="../widgets.html" class="nav-link" id="">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>
+                                    Lessons in Classes
+                                </p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="../widgets.html" class="nav-link" id="">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>
+                                    Lessons of Educators
                                 </p>
                             </a>
                         </li>
@@ -222,7 +238,8 @@
             <div class="float-right d-none d-sm-block">
                 <b>Version</b> 1.2.0
             </div>
-            <strong>Copyright &copy; 2025 <a asp-action="Index" asp-controller="Home">GWO Timetable</a>.</strong> All
+            <strong>Copyright &copy; 2024 <span id="currentYear"></span> <a asp-action="Index" asp-controller="Home">GWO
+                    Timetable</a>.</strong> All
             rights
             reserved.
         </footer>
@@ -245,6 +262,8 @@
     <script src="~/ThemeData/AdminLTE/plugins/bootstrap4-duallistbox/jquery.bootstrap-duallistbox.min.js"></script>
     <script src="~/ThemeData/AdminLTE/plugins/select2/js/select2.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @RenderSection("Scripts", required: false)
     <script>
         $(function () {
             //Initialize Select2 Elements
@@ -254,15 +273,47 @@
             $('.select2bs4').select2({
                 theme: 'bootstrap4'
             })
-
         });
 
-        $("#workspace").change(function () {
-            var workspaceId = $(this).val();
-            window.location.href = '@Url.Action("Index", "Home")' + '?WorkspaceId=' + workspaceId;
+    </script>
+
+    <script>
+        var year = new Date().getFullYear();
+        if (year != 2024)
+            document.getElementById("currentYear").textContent = " - " + year;
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var activeTabId = '@ViewBag.ActiveTabId';
+            var activeLink = document.getElementById(activeTabId);
+
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
         });
     </script>
-    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        $(document).ready(function () {
+            $.ajax({
+                url: '@Url.Action("GetWorkspaceSelectList", "Workspace")',
+                // Doğru URL'yi yaz
+                type: 'GET',
+                success: function (response) {
+                    // Gelen partial view'ı yerleştir
+                    $('#workspaceContainer').html(response);
+
+                },
+                error: function (xhr, status, error) {
+                    $('#workspaceContainer').html("Error loading partial view:");
+                }
+            });
+        });
+    </script>
+
+
+
 </body>
 
 </html>

@@ -56,7 +56,7 @@ namespace GWOTimetable.Controllers
                     new Claim(ClaimTypes.Role,userInformations.Role.RoleName),
                     new Claim("UserId",userInformations.UserId.ToString()),
                     new Claim("PhotoUrl",userInformations.PhotoUrl),
-                    new Claim("WorkspaceId",workspace[0].WorkspaceId.ToString()),
+                    new Claim("WorkspaceId",workspace[0].WorkspaceId.ToString())
                 };
                 var userIdentity = new ClaimsIdentity(claims, "Login"); //kullanıcı kimliği oluşturuldu
 
@@ -71,7 +71,7 @@ namespace GWOTimetable.Controllers
 
                 return Ok(new
                 {
-                    redirectUrl = Url.Action("Index", "Home", new { WorkspaceId = workspace[0].WorkspaceId.ToString() }),
+                    redirectUrl = Url.Action("Dashboard", "Home"),
                     message = "Login success!"
                 });
             }

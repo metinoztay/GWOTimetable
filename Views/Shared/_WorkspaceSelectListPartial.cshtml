@@ -1,0 +1,49 @@
+@using GWOTimetable.Models;
+@using System.Security.Claims
+@model IEnumerable<Workspace>;
+@{
+    Guid selectedWorkspaceId = Guid.Empty;
+    var userWorkspaceId = User.FindFirstValue("WorkspaceId");
+    if (!string.IsNullOrEmpty(userWorkspaceId))
+    {
+        selectedWorkspaceId = Guid.Parse(userWorkspaceId);
+    }
+}
+
+@if (Model.Count() > 0)
+{
+    <select id="workspace" class="form-control select2bs4 select2-hidden-accessible" style="width: 430px;"
+        data-select2-id="17" tabindex="-1" aria-hidden="true">
+        @foreach (var ws in Model)
+        {
+            if (selectedWorkspaceId == @ws.WorkspaceId)
+            {
+                <option selected="selected" value="@ws.WorkspaceId">
+                    @ws.WorkspaceName</option>
+            }
+            else
+            {
+                <option value="@ws.WorkspaceId">
+                    @ws.WorkspaceName</option>
+            }
+
+        }
+    </select>
+}
+
+
+<script>
+    $(document).ready(function () {
+
+        $('.select2bs4').select2({
+            theme: 'bootstrap4'
+        })
+
+        // Değişim olayı
+        $("#workspace").change(function () {
+            var workspaceId = $(this).val();
+            var url = '@Url.Action("ChangeSelectedWorkspace", "Workspace")' + '?WorkspaceId=' + workspaceId;
+            window.location.href = url;
+        });
+    });
+</script>
