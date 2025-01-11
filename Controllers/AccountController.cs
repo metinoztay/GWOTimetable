@@ -96,7 +96,7 @@ namespace GWOTimetable.Controllers
         {
             if (string.IsNullOrWhiteSpace(user.FirstName) || string.IsNullOrWhiteSpace(user.LastName))
             {
-                return BadRequest(new { message = "First name and last name cannot be empty!" });
+                return BadRequest(new { message = "First Name and Last Name cannot be empty!" });
             }
 
             if (string.IsNullOrWhiteSpace(user.Email))

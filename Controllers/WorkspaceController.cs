@@ -20,11 +20,8 @@ namespace GWOTimetable.Controllers
         }
 
 
-        public async Task<IActionResult> ChangeSelectedWorkspaceAsync(Workspace ws)
-        {/*
-            Workspace ws = new Workspace();
-            ws.WorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));*/
-
+        public async Task<IActionResult> ChangeSelectedWorkspace(Workspace ws)
+        {
             var userId = User.FindFirst("UserId")?.Value;
             bool isAnyWorkspace = _context.Workspaces.Any(w => w.WorkspaceId == ws.WorkspaceId && w.UserId.ToString() == userId);
             var workspaces = _context.Workspaces.Where(w => w.UserId.ToString() == userId).OrderBy(w => w.CreatedAt).ToList();
@@ -63,7 +60,6 @@ namespace GWOTimetable.Controllers
 
             return PartialView("_WorkspaceSelectListPartial", workspaces);
         }
-
 
     }
 }

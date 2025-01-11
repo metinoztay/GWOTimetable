@@ -55,14 +55,12 @@
                                             <input type="password" id="password" class="form-control"
                                                 placeholder="Your password" autocomplete="off">
                                             <span class="input-group-text">
-                                                <a href="#" class="link-secondary" title="Show password"
-                                                    data-bs-toggle="tooltip"><i class="fa-solid fa-eye"></i>
+                                                <a href="#" class="link-secondary" id="togglePassword"
+                                                    title="Show password" data-bs-toggle="tooltip">
+                                                    <i class="fa-solid fa-eye"></i>
                                                 </a>
                                             </span>
                                         </div>
-                                        <script>
-
-                                        </script>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-check">
@@ -147,6 +145,24 @@
 
         });
 
+    </script>
+    <script>
+        // Şifre göster/gizle işlevi
+        $('#togglePassword').click(function (e) {
+            e.preventDefault(); // Sayfa yenilenmesini önler
+
+            var passwordField = $('#password');
+            var passwordFieldType = passwordField.attr('type');
+            var icon = $(this).find('i');
+
+            if (passwordFieldType === 'password') {
+                passwordField.attr('type', 'text');
+                icon.removeClass('fa-eye').addClass('fa-eye-slash'); // Göster simgesini değiştir
+            } else {
+                passwordField.attr('type', 'password');
+                icon.removeClass('fa-eye-slash').addClass('fa-eye'); // Gizle simgesini değiştir
+            }
+        });
     </script>
 </body>
 
