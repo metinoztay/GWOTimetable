@@ -38,12 +38,27 @@ public static class Utilities
         return new string(passwordChars);
     }
 
-
     public static string ToProperCase(string str)
     {
         if (string.IsNullOrEmpty(str))
             return str;
 
+        str = System.Text.RegularExpressions.Regex.Replace(str, @"\s+", " ");
         return string.Concat(str.Select((x, i) => i == 0 || char.IsWhiteSpace(str[i - 1]) ? char.ToUpper(x) : char.ToLower(x)));
+    }
+
+
+    public static IEnumerable<string> GetVariations(int number)
+    {
+        if (number == 0)
+            yield return string.Empty;
+
+        for (int i = 1; i <= number; i++)
+        {
+            foreach (var variation in GetVariations(number - i))
+            {
+                yield return i + (string.IsNullOrEmpty(variation) ? string.Empty : "," + variation);
+            }
+        }
     }
 }

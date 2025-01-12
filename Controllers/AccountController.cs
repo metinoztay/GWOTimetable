@@ -44,7 +44,7 @@ namespace GWOTimetable.Controllers
 
             string hashPassword = Utilities.CreateHash(user.PasswordHash);
             var userInformations = _context.Users.Include(u => u.Role).Where(u => u.Email == user.Email && u.PasswordHash == hashPassword).FirstOrDefault();
-            var workspace = _context.Workspaces.Where(u => u.UserId == userInformations.UserId).OrderByDescending(u => u.CreatedAt).ToList();
+            var workspace = _context.Workspaces.Where(u => u.UserId == userInformations.UserId).OrderBy(u => u.CreatedAt).ToList();
 
             if (userInformations != null) //kullanıcı bulundu
             {
@@ -97,6 +97,11 @@ namespace GWOTimetable.Controllers
             if (string.IsNullOrWhiteSpace(user.FirstName) || string.IsNullOrWhiteSpace(user.LastName))
             {
                 return BadRequest(new { message = "First Name and Last Name cannot be empty!" });
+            }
+            var nameRegex = @"^[a-zA-Z\s]+$";
+            if (!Regex.IsMatch(user.FirstName.Trim(), nameRegex) || !Regex.IsMatch(user.LastName.Trim(), nameRegex))
+            {
+                return BadRequest(new { message = "First Name and Last Name must contain only letters!" });
             }
 
             if (string.IsNullOrWhiteSpace(user.Email))

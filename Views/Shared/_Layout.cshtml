@@ -9,7 +9,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AdminLTE 3 | Projects</title>
+    <title>@ViewData["Title"]</title>
 
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
@@ -35,7 +35,7 @@
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
                 </li>
                 <li class="nav-item">
-                    <div id="workspaceContainer"> </div>
+                    <div id="workspaceContainer" style="width: 430px;"> </div>
                 </li>
 
 
@@ -135,19 +135,19 @@
                         <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
                         <li class="nav-item">
-                            <a href="#" class="nav-link" id="Dashboard">
+                            <a href="@Url.Action("Dashboard", "Home")" class="nav-link" id="Dashboard">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>
                                     Dashboard
                                 </p>
                             </a>
                         </li>
-                        <li class="nav-header">FORMATİON</li>
+                        <li class="nav-header">MANAGEMENT</li>
                         <li class="nav-item">
-                            <a href="../widgets.html" class="nav-link" id="Lessons">
+                            <a href="@Url.Action("Management", "Course")" class="nav-link" id="CourseManagement">
                                 <i class="nav-icon fas fa-book"></i>
                                 <p>
-                                    Lessons
+                                    Courses
                                 </p>
                             </a>
                         </li>
