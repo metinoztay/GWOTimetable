@@ -1,76 +1,99 @@
 @{
-    ViewData["Title"] = "Course Management";
+    ViewBag.MenuHead = "Management";
+    ViewBag.Controller = "Course";
+    ViewBag.Action = "List";
+    ViewBag.Title = "Course Management";
     int i = 1;
 }
 
 @model IEnumerable<Course>
-<div class="card card-info card-outline">
-    <div class="card-header d-flex align-items-center">
-        <h3 class="card-title"><i class="fas fa-satellite-dish"></i> &ensp; Course List</h3>
 
-        <button type="button" class="btn btn-outline-success btn-sm ml-auto" data-toggle="modal"
-            data-target="#addCourseModal">
-            <i class="fas fa-plus"></i>&nbsp; Add Course
-        </button>
-    </div>
+    <div class="card card-info card-outline">
+        <div class="card-header d-flex align-items-center">
+            <h3 class="card-title"><i class="fas fa-book"></i> &ensp; Course List</h3>
 
-    <div class="card-body p-0">
-        <table class="table table-striped projects" id="equipmentRecordsTable">
-            <thead>
-                <tr>
-                    <th style="">No</th>
-                    <th style="">Course Code</th>
-                    <th>Course Name</th>
-                    <th class="text-center">Weekly Hour</th>
-                    <th class="text-center">Placement Format</th>
-                    <th style="">Description</th>
-                    <th style="">Created At</th>
-                    <th style="">Updated At</th>
-                    <th class="text-center" style="">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var course in Model)
-                {
+            <button type="button" class="btn btn-outline-success btn-sm ml-auto" data-toggle="modal"
+                data-target="#addCourseModal">
+                <i class="fas fa-plus"></i>&nbsp; Add Course
+            </button>
+        </div>
+
+        <div class="card-body p-0">
+            @if (Model.Count() > 0)
+{
+            <table class="table table-striped projects" id="courseList">
+                <thead>
                     <tr>
-                        <td>@i</td>
-                        <td>@course.CourseCode</td>
-                        <td>@course.CourseName</td>
-                        <td class="text-center">@course.WeeklyHourCount</td>
-                        <td class="text-center">@course.PlacementFormat</td>
-                        <td class="text-center">@course.Description</td>
-                        <td>@course.CreatedAt</td>
-                        <td>@course.UpdatedAt</td>
-                        <td class="text-right"> <a asp-controller="Equipment" asp-action="Details" asp-route-equipmentId=""
-                                class="btn btn-info btn-sm">
-                                <i class="fas fa-eye"></i>&ensp;Details
-                            </a>
-                            <button class="btn btn-danger btn-sm delete-course-button" data-course-id="@course.CourseId"
-                                data-course-code="@course.CourseCode" data-course-name="@course.CourseName"
-                                data-toggle="modal" data-target="#deleteCourseModal">
-                                <i class="fas fa-trash"></i>
-                            </button>
-
-                        </td>
-
+                        <th style="">No</th>
+                        <th style="">Course Code</th>
+                        <th>Course Name</th>
+                        <th class="text-center">Weekly Hour</th>
+                        <th class="text-center">Placement Format</th>
+                        <th>Description</th>
+                        <th class="text-center">Created At</th>
+                        <th class="text-center">Updated At</th>
+                        <th class="text-center" style="">Actions</th>
                     </tr>
-                    i++;
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var course in Model)
+                    {
+                        <tr>
+                            <td style="width: 1%" class="text-right">@i</td>
+                            <td style="width: 10%">@course.CourseCode</td>
+                            <td style="width: 20%">@course.CourseName</td>
+                            <td class="text-center" style="width: 8%">@course.WeeklyHourCount</td>
+                            <td class="text-center" style="width: 8%">@course.PlacementFormat</td>
+                            <td style="width: 20%" >
+                                <span title="@(course.Description ?? "No description.")">
+                                    @if (string.IsNullOrEmpty(course.Description))
+                                    {
+                                        @("No description.")
+                                    }
+                                    else if (course.Description.Length > 60)
+                                    {
+                                        @(course.Description.Substring(0, 60) + "...")
+                                    }
+                                    else
+                                    {
+                                        @(course.Description)
+                                    }
+                                </span>
+                            </td>
+                            <td style="width: 9%" class="text-center">@course.CreatedAt</td>
+                            <td style="width: 9%" class="text-center">@(course.UpdatedAt.HasValue ? course.UpdatedAt.ToString()
+                        : "Not updated yet.")</td>
+                            <td class="text-center" style="width: 15%">
+                                <a asp-controller="Course" asp-action="Details" asp-route-courseId="@course.CourseId"
+                                    class="btn btn-info btn-sm">
+                                    <i class="fas fa-eye"></i>&ensp; Details
+                                </a>
+                                <button class="btn btn-danger btn-sm delete-course-button" data-course-id="@course.CourseId"
+                                    data-course-code="@course.CourseCode" data-course-name="@course.CourseName"
+                                    data-toggle="modal" data-target="#deleteCourseModal">
+                                    <i class="fas fa-trash"></i>
+                                </button>
 
+                            </td>
 
-
+                        </tr>
+                        i++;
+                    }
+                </tbody>
+            </table>
+}
+        </div>
     </div>
-</div>
+
+
 
 
 <!-- Add Course Modal -->
 <div class="modal fade" id="addCourseModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Course</h5>
+            <div class="modal-header bg-success">
+                <h5 class="modal-title"><i class="fas fa-circle-plus"></i>&nbsp; Add New Course</h5>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
@@ -82,12 +105,12 @@
 
                     <div class="form-group col-md-6">
                         <label>Course Code </label>
-                        <input type="text" class="form-control" id="newCourseCode">
+                        <input type="text" class="form-control" id="newCourseCode" maxlength="15">
                     </div>
 
                     <div class="form-group col-md-6">
                         <label>Course Name </label>
-                        <input type="text" class="form-control" id="newCourseName">
+                        <input type="text" class="form-control" id="newCourseName" maxlength="100">
                     </div>
 
                     <div class="form-group col-md-6">
@@ -112,7 +135,7 @@
 
                     <div class="form-group col-md-12">
                         <label>Description</label>
-                        <textarea class="form-control" id="newCourseDescription" rows="4"></textarea>
+                        <textarea class="form-control" id="newCourseDescription" rows="4" maxlength="250"></textarea>
                     </div>
                 </div>
 
@@ -129,14 +152,16 @@
     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteCourseModalLabel">Delete Confirmation</h5>
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteCourseModalLabel"><i class="fas fa-exclamation-circle"></i>&nbsp;
+                    Delete
+                    Confirmation</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <dt>Are you sure you want to delete this finding?</dt>
+                <dt>Are you sure you want to delete this course?</dt>
                 <br>
                 <dl class="row">
                     <dt class="col-sm-4">Course Code</dt>
@@ -228,24 +253,20 @@
     <script>
         $(document).ready(function () {
             $('#newWeeklyHourCount').on('change', function () {
-                var weeklyHourValue = parseInt($(this).val()); // Weekly Hour seçilen değer
+                var weeklyHourValue = parseInt($(this).val()); 
 
                 const placementFormat = document.getElementById('newPlacementFormat');
 
-                // Mevcut seçenekleri temizle
                 placementFormat.innerHTML = '';
 
-                // Varsayılan "Select one" seçeneğini ekle
                 const option = document.createElement('option');
                 option.value = "";
                 option.text = "Select Placement Format";
                 placementFormat.appendChild(option);
 
-                // Eğer geçerli bir değer varsa, varyasyonları oluştur
                 if (!isNaN(weeklyHourValue)) {
                     const variations = getVariations(weeklyHourValue);
 
-                    // Varyasyonları ekle
                     variations.forEach(variation => {
                         const option = document.createElement('option');
                         option.value = variation;
@@ -291,14 +312,11 @@
         $(document).ready(function () {
             $('.delete-course-button').on('click', function () {
                 const courseId = $(this).data('course-id');
-                $('#confirmDeleteFindingButton').data('course-id', courseId);
                 $('#deleteCourseCode').text($(this).data('course-code'));
                 $('#deleteCourseName').text($(this).data('course-name'));
 
-                // Silme işlemi için kullanılacak courseId'yi modal'a ekleyin
                 $('#confirmDeleteCourseButton').data('course-id', courseId);
             });
-            // Silme işlemi
             $('#confirmDeleteCourseButton').on('click', function () {
 
                 const courseId = parseInt($(this).data('course-id'));

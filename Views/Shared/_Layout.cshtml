@@ -9,7 +9,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@ViewData["Title"]</title>
+    <title>@ViewBag.Title</title>
 
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
@@ -112,12 +112,13 @@
         <!-- /.navbar -->
 
         <!-- Main Sidebar Container -->
-        <aside class="main-sidebar sidebar-dark-olive elevation-4">
+        <aside class="main-sidebar sidebar-light-lightblue elevation-2">
             <!-- Brand Logo -->
-            <a asp-action="Index" asp-controller="Home" class="brand-link">
-                <img src="~/ThemeData/AdminLTE/dist/img/AdminLTELogo.png" alt="AdminLTE Logo"
-                    class="brand-image img-circle elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light"><b>GWO</b> TimeTable</span>
+            <a asp-action="Dashboard" asp-controller="Home" class="brand-link bg-lightblue">
+                <img src="~/ThemeData/wolficon.png" alt="AdminLTE Logo" class="brand-image img-square elevation-0"
+                    style="opacity: .8">
+                <span class="brand-text font-weight-light
+                "><b>GWO</b> TimeTable</span>
             </a>
 
             <!-- Sidebar -->
@@ -130,10 +131,8 @@
 
                 <!-- Sidebar Menu -->
                 <nav class="mt-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
-                        data-accordion="false">
-                        <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
+                    <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview"
+                        role="menu" data-accordion="false">
                         <li class="nav-item">
                             <a href="@Url.Action("Dashboard", "Home")" class="nav-link" id="Dashboard">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -146,11 +145,17 @@
                         <li class="nav-item">
                             <a href="@Url.Action("Management", "Course")" class="nav-link" id="CourseManagement">
                                 <i class="nav-icon fas fa-book"></i>
-                                <p>
-                                    Courses
-                                </p>
+                                <p>Courses</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" id="CourseDetails" style="display: none;">
+                                &nbsp; &nbsp; <i class="nav-icon fas fa-circle-info"></i>
+                                <p>Course Details</p>
+                            </a>
+                        </li>
+
+
                         <li class="nav-item">
                             <a href="../widgets.html" class="nav-link" id="Classes">
                                 <i class="nav-icon fas fa-chalkboard-teacher"></i>
@@ -214,12 +219,12 @@
                 <div class="container-fluid">
                     <div class="row mb-2">
                         <div class="col-sm-6">
-                            <h1>Projects</h1>
+                            <h1>@ViewBag.MenuHead</h1>
                         </div>
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-right">
-                                <li class="breadcrumb-item"><a href="#">Home</a></li>
-                                <li class="breadcrumb-item active">Projects</li>
+                                <li class="breadcrumb-item">@ViewBag.Controller</li>
+                                <li class="breadcrumb-item active">@ViewBag.Action</li>
                             </ol>
                         </div>
                     </div>
@@ -228,7 +233,9 @@
 
             <!-- Main content -->
             <section class="content">
-                @RenderBody()
+                <div class="container-fluid">
+                    @RenderBody()
+                </div>
             </section>
             <!-- /.content -->
         </div>
@@ -238,7 +245,8 @@
             <div class="float-right d-none d-sm-block">
                 <b>Version</b> 1.2.0
             </div>
-            <strong>Copyright &copy; 2024 <span id="currentYear"></span> <a asp-action="Index" asp-controller="Home">GWO
+            <strong>Copyright &copy; 2024 <span id="currentYear"></span> <a asp-action="Dashboard"
+                    asp-controller="Home">GWO
                     Timetable</a>.</strong> All
             rights
             reserved.
@@ -290,6 +298,7 @@
 
             if (activeLink) {
                 activeLink.classList.add('active');
+                activeLink.style.display = 'block';
             }
         });
     </script>

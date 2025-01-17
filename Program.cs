@@ -57,6 +57,6 @@ app.UseAuthorization();  // Yetkilendirme middleware'i
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Account}/{action=Login}");
+    pattern: "{controller=Home}/{action=Dashboard}");
 //pattern: "{controller=Account}/{action=Login}/{id?}");
 app.Run();

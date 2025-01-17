@@ -98,7 +98,7 @@ namespace GWOTimetable.Controllers
             {
                 return BadRequest(new { message = "First Name and Last Name cannot be empty!" });
             }
-            var nameRegex = @"^[a-zA-Z\s]+$";
+            var nameRegex = @"^[a-zA-Z\s]";
             if (!Regex.IsMatch(user.FirstName.Trim(), nameRegex) || !Regex.IsMatch(user.LastName.Trim(), nameRegex))
             {
                 return BadRequest(new { message = "First Name and Last Name must contain only letters!" });

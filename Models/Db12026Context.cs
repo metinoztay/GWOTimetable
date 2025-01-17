@@ -51,7 +51,6 @@ public partial class Db12026Context : DbContext
 
     public virtual DbSet<Workspace> Workspaces { get; set; }
 
-
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -79,7 +78,6 @@ public partial class Db12026Context : DbContext
         }
 
     */
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Class>(entity =>
@@ -198,7 +196,7 @@ public partial class Db12026Context : DbContext
                 .HasMaxLength(250)
                 .IsUnicode(false);
             entity.Property(e => e.PlacementFormat)
-                .HasMaxLength(15)
+                .HasMaxLength(20)
                 .IsUnicode(false);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
