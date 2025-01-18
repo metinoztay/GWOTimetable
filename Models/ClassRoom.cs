@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace GWOTimetable.Models;
 
-public partial class ClassRoom
+public partial class Classroom
 {
-    public int ClassRoomId { get; set; }
+    public int ClassroomId { get; set; }
 
     public Guid WorkspaceId { get; set; }
 
-    public string ClassRoomName { get; set; } = null!;
+    public string ClassroomName { get; set; } = null!;
 
     public string? Description { get; set; }
 

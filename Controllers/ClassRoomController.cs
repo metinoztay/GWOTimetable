@@ -11,11 +11,11 @@ using System.Text.RegularExpressions;
 namespace GWOTimetable.Controllers
 {
     [Authorize(Roles = "User")]
-    public class ClassRoomController : Controller
+    public class ClassroomController : Controller
     {
         private readonly Db12026Context _context;
 
-        public ClassRoomController()
+        public ClassroomController()
         {
             _context = new Db12026Context();
         }
@@ -25,74 +25,74 @@ namespace GWOTimetable.Controllers
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
             //authentication kontrolü eklenebilir
 
-            var classRooms = _context.ClassRooms.Where(c => c.WorkspaceId == selectedWorkspaceId).ToList();
+            var classrooms = _context.Classrooms.Where(c => c.WorkspaceId == selectedWorkspaceId).ToList();
 
 
-            ViewBag.ActiveTabId = "ClassRoomManagement";
-            return View(classRooms);
+            ViewBag.ActiveTabId = "ClassroomManagement";
+            return View(classrooms);
         }
 
         public IActionResult Details(int classroomId)
         {
             if (classroomId == null)
             {
-                return RedirectToAction("Management", "ClassRoom");
+                return RedirectToAction("Management", "Classroom");
             }
 
-            var classroom = _context.ClassRooms.FirstOrDefault(c => c.ClassRoomId == classroomId);
+            var classroom = _context.Classrooms.FirstOrDefault(c => c.ClassroomId == classroomId);
             if (classroom == null)
             {
-                return RedirectToAction("Management", "ClassRoom");
+                return RedirectToAction("Management", "Classroom");
             }
 
-            ViewBag.ActiveTabId = "ClassRoomDetails";
+            ViewBag.ActiveTabId = "ClassroomDetails";
             return View(classroom);
         }
 
         [HttpPost]
-        public async Task<IActionResult> NewClassRoom([FromBody] ClassRoom newClassRoom)
+        public async Task<IActionResult> NewClassroom([FromBody] Classroom newClassroom)
         {
-            if (string.IsNullOrWhiteSpace(newClassRoom.ClassRoomName))
+            if (string.IsNullOrWhiteSpace(newClassroom.ClassroomName))
             {
                 return BadRequest(new { message = "Name can not be empty!" });
             }
 
-            if (newClassRoom.ClassRoomName.Length > 50)
+            if (newClassroom.ClassroomName.Length > 50)
             {
                 return BadRequest(new { message = "Name cannot be longer than 50 characters!" });
             }
 
             var classNameRegex = @"^[a-zA-Z0-9\s]";
-            if (!Regex.IsMatch(newClassRoom.ClassRoomName.Trim(), classNameRegex))
+            if (!Regex.IsMatch(newClassroom.ClassroomName.Trim(), classNameRegex))
             {
                 return BadRequest(new { message = "Class name must contain only letters, numbers." });
             }
 
 
-            if (newClassRoom.Description?.Length > 250)
+            if (newClassroom.Description?.Length > 250)
             {
                 return BadRequest(new { message = "Description cannot be longer than 250 characters!" });
             }
 
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (_context.Classes.Any(c => c.ClassName == newClassRoom.ClassRoomName && c.WorkspaceId == selectedWorkspaceId))
+            if (_context.Classes.Any(c => c.ClassName == newClassroom.ClassroomName && c.WorkspaceId == selectedWorkspaceId))
             {
-                return BadRequest(new { message = "ClassRoom name is already in use in this workspace!" });
+                return BadRequest(new { message = "Classroom name is already in use in this workspace!" });
             }
 
-            newClassRoom.CreatedAt = DateTime.Now;
-            newClassRoom.ClassRoomName = Utilities.ToProperCase(newClassRoom.ClassRoomName.Trim());
-            newClassRoom.WorkspaceId = selectedWorkspaceId;
-            newClassRoom.Description = newClassRoom.Description.Trim();
-            _context.ClassRooms.Add(newClassRoom);
+            newClassroom.CreatedAt = DateTime.Now;
+            newClassroom.ClassroomName = Utilities.ToProperCase(newClassroom.ClassroomName.Trim());
+            newClassroom.WorkspaceId = selectedWorkspaceId;
+            newClassroom.Description = newClassroom.Description.Trim();
+            _context.Classrooms.Add(newClassroom);
             await _context.SaveChangesAsync();
             return Ok();
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateClassRoom([FromBody] ClassRoom classroom)
+        public async Task<IActionResult> UpdateClassroom([FromBody] Classroom classroom)
         {
-            if (classroom.ClassRoomName.Length > 50)
+            if (classroom.ClassroomName.Length > 50)
             {
                 return BadRequest(new { message = "Name cannot be longer than 50 characters!" });
             }
@@ -103,57 +103,57 @@ namespace GWOTimetable.Controllers
             }
 
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (classroom.ClassRoomId != null && _context.ClassRooms.Any(c => c.ClassRoomName == classroom.ClassRoomName && classroom.WorkspaceId == selectedWorkspaceId && c.ClassRoomId != classroom.ClassRoomId))
+            if (classroom.ClassroomId != null && _context.Classrooms.Any(c => c.ClassroomName == classroom.ClassroomName && classroom.WorkspaceId == selectedWorkspaceId && c.ClassroomId != classroom.ClassroomId))
             {
                 return BadRequest(new { message = "Name is already in use in this workspace!" });
             }
 
-            if (string.IsNullOrWhiteSpace(classroom.ClassRoomName))
+            if (string.IsNullOrWhiteSpace(classroom.ClassroomName))
             {
                 return BadRequest(new { message = "Name cannot be empty!" });
             }
 
             var nameRegex = @"^[a-zA-Z\s]";
-            if (!Regex.IsMatch(classroom.ClassRoomName.Trim(), nameRegex))
+            if (!Regex.IsMatch(classroom.ClassroomName.Trim(), nameRegex))
             {
                 return BadRequest(new { message = "Name must contain only letters!" });
             }
 
-            var oldClassRoom = await _context.ClassRooms.FirstOrDefaultAsync(c => c.ClassRoomId == classroom.ClassRoomId);
-            oldClassRoom.UpdatedAt = DateTime.Now;
-            oldClassRoom.ClassRoomName = Utilities.ToProperCase(classroom.ClassRoomName.Trim());
-            oldClassRoom.Description = classroom.Description.Trim();
+            var oldClassroom = await _context.Classrooms.FirstOrDefaultAsync(c => c.ClassroomId == classroom.ClassroomId);
+            oldClassroom.UpdatedAt = DateTime.Now;
+            oldClassroom.ClassroomName = Utilities.ToProperCase(classroom.ClassroomName.Trim());
+            oldClassroom.Description = classroom.Description.Trim();
 
-            _context.Entry(oldClassRoom).State = EntityState.Modified;
+            _context.Entry(oldClassroom).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return Ok();
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteClassRoom([FromBody] ClassRoom deleteClassRoom)
+        public async Task<IActionResult> DeleteClassroom([FromBody] Classroom deleteClassroom)
         {
-            if (deleteClassRoom == null)
+            if (deleteClassroom == null)
             {
-                return BadRequest(new { message = "ClassRoom cannot be empty!" });
+                return BadRequest(new { message = "Classroom cannot be empty!" });
             }
 
-            deleteClassRoom = await _context.ClassRooms
+            deleteClassroom = await _context.Classrooms
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.ClassRoomId == deleteClassRoom.ClassRoomId);
+                .FirstOrDefaultAsync(c => c.ClassroomId == deleteClassroom.ClassroomId);
 
-            if (deleteClassRoom == null)
+            if (deleteClassroom == null)
             {
-                return NotFound(new { message = "ClassRoom not found!" });
+                return NotFound(new { message = "Classroom not found!" });
             }
 
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (deleteClassRoom.WorkspaceId != selectedWorkspaceId)
+            if (deleteClassroom.WorkspaceId != selectedWorkspaceId)
             {
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 return Unauthorized(new { message = "You are not authorized to delete this classroom!" });
             }
 
-            _context.ClassRooms.Remove(deleteClassRoom);
+            _context.Classrooms.Remove(deleteClassroom);
             await _context.SaveChangesAsync();
             return Ok();
         }

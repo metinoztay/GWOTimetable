@@ -23,7 +23,7 @@ public partial class ClassCourse
 
     public virtual Class Class { get; set; } = null!;
 
-    public virtual ClassRoom ClassRoom { get; set; } = null!;
+    public virtual Classroom ClassRoom { get; set; } = null!;
 
     public virtual Course Course { get; set; } = null!;
 

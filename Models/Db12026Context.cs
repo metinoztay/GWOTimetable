@@ -21,9 +21,9 @@ public partial class Db12026Context : DbContext
 
     public virtual DbSet<ClassCourse> ClassCourses { get; set; }
 
-    public virtual DbSet<ClassRoom> ClassRooms { get; set; }
+    public virtual DbSet<Classroom> Classrooms { get; set; }
 
-    public virtual DbSet<ClassRoomConstraint> ClassRoomConstraints { get; set; }
+    public virtual DbSet<ClassroomConstraint> ClassroomConstraints { get; set; }
 
     public virtual DbSet<Course> Courses { get; set; }
 
@@ -130,24 +130,24 @@ public partial class Db12026Context : DbContext
                 .HasConstraintName("FK_ClassCourses_WorkspaceId");
         });
 
-        modelBuilder.Entity<ClassRoom>(entity =>
+        modelBuilder.Entity<Classroom>(entity =>
         {
-            entity.HasKey(e => e.ClassRoomId).HasName("PK__ClassRooms");
+            entity.HasKey(e => e.ClassroomId).HasName("PK__ClassRooms");
 
-            entity.Property(e => e.ClassRoomName).HasMaxLength(50);
+            entity.Property(e => e.ClassroomName).HasMaxLength(50);
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.Description).HasMaxLength(250);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
-            entity.HasOne(d => d.Workspace).WithMany(p => p.ClassRooms)
+            entity.HasOne(d => d.Workspace).WithMany(p => p.Classrooms)
                 .HasForeignKey(d => d.WorkspaceId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ClassRooms_WorkspaceId");
         });
 
-        modelBuilder.Entity<ClassRoomConstraint>(entity =>
+        modelBuilder.Entity<ClassroomConstraint>(entity =>
         {
-            entity.HasKey(e => e.ClassRoomConstraintId).HasName("PK__ClassRoomConstraints");
+            entity.HasKey(e => e.ClassroomConstraintId).HasName("PK__ClassRoomConstraints");
         });
 
         modelBuilder.Entity<Course>(entity =>
@@ -303,7 +303,7 @@ public partial class Db12026Context : DbContext
             entity.HasKey(e => e.TimetablePlacementId).HasName("PK__TimetablePlacements");
 
             entity.Property(e => e.ClassName).HasMaxLength(50);
-            entity.Property(e => e.ClassRoomName).HasMaxLength(50);
+            entity.Property(e => e.ClassroomName).HasMaxLength(50);
             entity.Property(e => e.CourseCode).HasMaxLength(15);
             entity.Property(e => e.CourseName).HasMaxLength(100);
             entity.Property(e => e.DayOfWeek).HasMaxLength(20);

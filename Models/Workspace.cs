@@ -21,9 +21,9 @@ public partial class Workspace
 
     public virtual ICollection<ClassCourse> ClassCourses { get; set; } = new List<ClassCourse>();
 
-    public virtual ICollection<ClassRoom> ClassRooms { get; set; } = new List<ClassRoom>();
-
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
+
+    public virtual ICollection<Classroom> Classrooms { get; set; } = new List<Classroom>();
 
     public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
 

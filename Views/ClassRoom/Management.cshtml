@@ -1,20 +1,20 @@
 @{
     ViewBag.MenuHead = "Management";
-    ViewBag.Controller = "ClassRoom";
+    ViewBag.Controller = "Classroom";
     ViewBag.Action = "List";
-    ViewBag.Title = "ClassRoom Management";
+    ViewBag.Title = "Classroom Management";
     int i = 1;
 }
 
-@model IEnumerable<ClassRoom>
+@model IEnumerable<Classroom>
 
     <div class="card card-info card-outline">
         <div class="card-header d-flex align-items-center">
-            <h3 class="card-title"><i class="fas fa-university"></i> &ensp; ClassRoom List</h3>
+            <h3 class="card-title"><i class="fas fa-university"></i> &ensp; Classroom List</h3>
 
             <button type="button" class="btn btn-outline-success btn-sm ml-auto" data-toggle="modal"
-                data-target="#addClassRoomModal">
-                <i class="fas fa-plus"></i>&nbsp; Add ClassRoom
+                data-target="#addClassroomModal">
+                <i class="fas fa-plus"></i>&nbsp; Add Classroom
             </button>
         </div>
 
@@ -25,7 +25,7 @@
                 <thead>
                     <tr>
                         <th style="">No</th>
-                        <th>ClassRoom Name</th>
+                        <th>Classroom Name</th>
                         <th>Description</th>
                         <th class="text-center">Created At</th>
                         <th class="text-center">Updated At</th>
@@ -37,7 +37,7 @@
                     {
                         <tr>
                             <td style="width: 1%" class="text-right">@i</td>
-                            <td style="width: 20%">@c.ClassRoomName</td>
+                            <td style="width: 20%">@c.ClassroomName</td>
                             <td style="width: 20%" >
                                 <span title="@(c.Description ?? "No description.")">
                                     @if (string.IsNullOrEmpty(c.Description))
@@ -58,13 +58,13 @@
                             <td style="width: 9%" class="text-center">@(c.UpdatedAt.HasValue ? c.UpdatedAt.ToString()
                         : "Not updated yet.")</td>
                             <td class="text-center" style="width: 15%">
-                                <a asp-controller="ClassRoom" asp-action="Details" asp-route-classroomId="@c.ClassRoomId"
+                                <a asp-controller="Classroom" asp-action="Details" asp-route-classroomId="@c.ClassroomId"
                                     class="btn btn-info btn-sm">
                                     <i class="fas fa-eye"></i>&ensp; Details
                                 </a>
-                                <button class="btn btn-danger btn-sm delete-classroom-button" data-classroom-id="@c.ClassRoomId"
-                                    data-classroom-name="@c.ClassRoomName" data-classroom-desc="@c.Description"
-                                    data-toggle="modal" data-target="#deleteClassRoomModal">
+                                <button class="btn btn-danger btn-sm delete-classroom-button" data-classroom-id="@c.ClassroomId"
+                                    data-classroom-name="@c.ClassroomName" data-classroom-desc="@c.Description"
+                                    data-toggle="modal" data-target="#deleteClassroomModal">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -80,11 +80,11 @@
 
 
 
-<div class="modal fade" id="addClassRoomModal" tabindex="-1">
+<div class="modal fade" id="addClassroomModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-success">
-                <h5 class="modal-title"><i class="fas fa-circle-plus"></i>&nbsp; Add New ClassRoom</h5>
+                <h5 class="modal-title"><i class="fas fa-circle-plus"></i>&nbsp; Add New Classroom</h5>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
@@ -94,30 +94,30 @@
                 </div>
 
                 <div class="form-group">
-                        <label>ClassRoom Name </label>
-                        <input type="text" class="form-control" id="newClassRoomName" maxlength="50">
+                        <label>Classroom Name </label>
+                        <input type="text" class="form-control" id="newClassroomName" maxlength="50">
                 </div>
 
                 <div class="form-group">
                         <label>Description</label>
-                        <textarea class="form-control" id="newClassRoomDescription" rows="4" maxlength="250"></textarea>
+                        <textarea class="form-control" id="newClassroomDescription" rows="4" maxlength="250"></textarea>
                 </div>
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" id="saveNewClassRoomButton">Save</button>
+                    <button type="button" class="btn btn-success" id="saveNewClassroomButton">Save</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="deleteClassRoomModal" tabindex="-1" role="dialog" aria-labelledby="deleteClassRoomModalLabel"
+<div class="modal fade" id="deleteClassroomModal" tabindex="-1" role="dialog" aria-labelledby="deleteClassroomModalLabel"
     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteClassRoomModalLabel"><i class="fas fa-exclamation-circle"></i>&nbsp;
+                <h5 class="modal-title" id="deleteClassroomModalLabel"><i class="fas fa-exclamation-circle"></i>&nbsp;
                     Delete
                     Confirmation</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -129,10 +129,10 @@
                 <dd>All settings related to this classroom will be deleted.</dd>
                 <br>
                 <dl class="row">
-                    <dt class="col-sm-4">ClassRoom Name</dt>
-                    <dd class="col-sm-8" id="deleteClassRoomName"></dd>
-                    <dt class="col-sm-4">ClassRoom Description</dt>
-                    <dd class="col-sm-8" id="deleteClassRoomDesc"></dd>
+                    <dt class="col-sm-4">Classroom Name</dt>
+                    <dd class="col-sm-8" id="deleteClassroomName"></dd>
+                    <dt class="col-sm-4">Classroom Description</dt>
+                    <dd class="col-sm-8" id="deleteClassroomDesc"></dd>
 
                 </dl>
             </div>
@@ -140,7 +140,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" data-classroom-id=""
-                    id="confirmDeleteClassRoomButton">Delete</button>
+                    id="confirmDeleteClassroomButton">Delete</button>
             </div>
         </div>
     </div>
@@ -170,21 +170,21 @@
 
     <script>
         $(document).ready(function () {
-            $('#saveNewClassRoomButton').click(function () {
+            $('#saveNewClassroomButton').click(function () {
                 var classroomData = {
-                    ClassRoomName: $('#newClassRoomName').val(),
-                    Description: $('#newClassRoomDescription').val()
+                    ClassroomName: $('#newClassroomName').val(),
+                    Description: $('#newClassroomDescription').val()
                 };
 
                 $.ajax({
-                    url: '@Url.Action("NewClassRoom", "ClassRoom")',
+                    url: '@Url.Action("NewClassroom", "Classroom")',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(classroomData),
                     success: function (response) {
                         Swal.fire({
                             icon: 'success',
-                            title: "ClassRoom added successfully.",
+                            title: "Classroom added successfully.",
                             showConfirmButton: false,
                             timer: 2000
                         }).then(() => {
@@ -216,29 +216,29 @@
         $(document).ready(function () {
             $('.delete-classroom-button').on('click', function () {
                 const classroomId = $(this).data('classroom-id');
-                $('#deleteClassRoomName').text($(this).data('classroom-name'));                
-                $('#deleteClassRoomDesc').text($(this).data('classroom-desc'));
+                $('#deleteClassroomName').text($(this).data('classroom-name'));                
+                $('#deleteClassroomDesc').text($(this).data('classroom-desc'));
 
-                $('#confirmDeleteClassRoomButton').data('classroom-id', classroomId);
+                $('#confirmDeleteClassroomButton').data('classroom-id', classroomId);
             });
 
-            $('#confirmDeleteClassRoomButton').on('click', function () {
+            $('#confirmDeleteClassroomButton').on('click', function () {
 
                 const classroomId = parseInt($(this).data('classroom-id'));
 
                 const classroomData = {
-                    ClassRoomId: classroomId
+                    ClassroomId: classroomId
                 };
 
                 $.ajax({
-                    url: '@Url.Action("DeleteClassRoom", "ClassRoom")',
+                    url: '@Url.Action("DeleteClassroom", "Classroom")',
                     type: 'DELETE',
                     contentType: 'application/json',
                     data: JSON.stringify(classroomData),
                     success: function (response) {
                         Swal.fire({
                             icon: 'success',
-                            title: "ClassRoom deleted successfully.",
+                            title: "Classroom deleted successfully.",
                             showConfirmButton: false,
                             timer: 2000
                         }).then(() => {

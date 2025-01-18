@@ -21,7 +21,7 @@ public partial class TimetablePlacement
 
     public string CourseName { get; set; } = null!;
 
-    public string ClassRoomName { get; set; } = null!;
+    public string ClassroomName { get; set; } = null!;
 
     public string ClassName { get; set; } = null!;
 
