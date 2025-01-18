@@ -327,7 +327,7 @@
 
                 $.ajax({
                     url: '@Url.Action("DeleteCourse", "Course")',
-                    type: 'POST',
+                    type: 'DELETE',
                     contentType: 'application/json',
                     data: JSON.stringify(courseData),
                     success: function (response) {

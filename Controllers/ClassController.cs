@@ -11,11 +11,11 @@ using System.Text.RegularExpressions;
 namespace GWOTimetable.Controllers
 {
     [Authorize(Roles = "User")]
-    public class CourseController : Controller
+    public class ClassController : Controller
     {
         private readonly Db12026Context _context;
 
-        public CourseController()
+        public ClassController()
         {
             _context = new Db12026Context();
         }
@@ -25,11 +25,11 @@ namespace GWOTimetable.Controllers
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
             //authentication kontrolü eklenebilir
 
-            var courses = _context.Courses.Where(c => c.WorkspaceId == selectedWorkspaceId).ToList();
+            var classes = _context.Classes.Where(c => c.WorkspaceId == selectedWorkspaceId).ToList();
 
 
-            ViewBag.ActiveTabId = "CourseManagement";
-            return View(courses);
+            ViewBag.ActiveTabId = "ClassManagement";
+            return View(classes);
         }
 
         public IActionResult Details(int courseId)
@@ -50,73 +50,47 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> NewCourse([FromBody] Course newCourse)
+        public async Task<IActionResult> NewClass([FromBody] Class newClass)
         {
-            if (newCourse.CourseCode.Length > 15)
+            if (string.IsNullOrWhiteSpace(newClass.ClassName))
             {
-                return BadRequest(new { message = "Code cannot be longer than 15 characters!" });
+                return BadRequest(new { message = "Name can not be empty!" });
             }
 
-            if (newCourse.CourseName.Length > 100)
+            if (newClass.ClassName.Length > 50)
             {
-                return BadRequest(new { message = "Name cannot be longer than 100 characters!" });
+                return BadRequest(new { message = "Name cannot be longer than 50 characters!" });
             }
 
-            if (newCourse.Description?.Length > 250)
+            var classNameRegex = @"^[a-zA-Z0-9\s]+$";
+            if (!Regex.IsMatch(newClass.ClassName.Trim(), classNameRegex))
+            {
+                return BadRequest(new { message = "Class name must contain only letters, numbers." });
+            }
+
+
+            if (newClass.Description?.Length > 250)
             {
                 return BadRequest(new { message = "Description cannot be longer than 250 characters!" });
             }
 
-            if (string.IsNullOrWhiteSpace(newCourse.CourseCode))
-            {
-                return BadRequest(new { message = "Code can not be empty!" });
-            }
-
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (_context.Courses.Any(c => c.CourseCode == newCourse.CourseCode && c.WorkspaceId == selectedWorkspaceId))
+            if (_context.Classes.Any(c => c.ClassName == newClass.ClassName && c.WorkspaceId == selectedWorkspaceId))
             {
-                return BadRequest(new { message = "Code is already in use in this workspace!" });
+                return BadRequest(new { message = "Class name is already in use in this workspace!" });
             }
 
-            var codeRegex = @"^[a-zA-Z0-9]";
-            if (newCourse.CourseCode.Contains(" ") || !Regex.IsMatch(newCourse.CourseCode.Trim(), codeRegex))
-            {
-                return BadRequest(new { message = "Code must contain only letters and numbers, and cannot contain spaces!" });
-            }
-
-            if (string.IsNullOrWhiteSpace(newCourse.CourseName))
-            {
-                return BadRequest(new { message = "Name cannot be empty!" });
-            }
-
-            var nameRegex = @"^[a-zA-Z\s]";
-            if (!Regex.IsMatch(newCourse.CourseName.Trim(), nameRegex))
-            {
-                return BadRequest(new { message = "Name must contain only letters!" });
-            }
-
-            if (newCourse.WeeklyHourCount == 0)
-            {
-                return BadRequest(new { message = "Please select weekly hour count!" });
-            }
-
-            if (string.IsNullOrWhiteSpace(newCourse.PlacementFormat))
-            {
-                return BadRequest(new { message = "Please select a placement format!" });
-            }
-
-            newCourse.CreatedAt = DateTime.Now;
-            newCourse.CourseCode = newCourse.CourseCode.ToUpper();
-            newCourse.CourseName = Utilities.ToProperCase(newCourse.CourseName.Trim());
-            newCourse.WorkspaceId = selectedWorkspaceId;
-            newCourse.Description = newCourse.Description.Trim();
-            _context.Courses.Add(newCourse);
+            newClass.CreatedAt = DateTime.Now;
+            newClass.ClassName = Utilities.ToProperCase(newClass.ClassName.Trim());
+            newClass.WorkspaceId = selectedWorkspaceId;
+            newClass.Description = newClass.Description.Trim();
+            _context.Classes.Add(newClass);
             await _context.SaveChangesAsync();
             return Ok();
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateCourse([FromBody] Course course)
+        public async Task<IActionResult> UpdateClass([FromBody] Course course)
         {
             if (course.CourseCode.Length > 15)
             {
@@ -185,23 +159,23 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteCourse([FromBody] Course deleteCourse)
+        public async Task<IActionResult> DeleteClass([FromBody] Class deleteClass)
         {
-            if (deleteCourse == null)
+            if (deleteClass == null)
             {
-                return BadRequest(new { message = "Course cannot be empty!" });
+                return BadRequest(new { message = "Class cannot be empty!" });
             }
 
-            var course = await _context.Courses
+            var c = await _context.Classes
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.CourseId == deleteCourse.CourseId);
+                .FirstOrDefaultAsync(c => c.ClassId == deleteClass.ClassId);
 
-            if (course == null)
+            if (c == null)
             {
-                return NotFound(new { message = "Course not found!" });
+                return NotFound(new { message = "Class not found!" });
             }
 
-            _context.Courses.Remove(course);
+            _context.Classes.Remove(c);
             await _context.SaveChangesAsync();
             return Ok();
         }

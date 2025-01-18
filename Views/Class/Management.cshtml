@@ -1,0 +1,268 @@
+@{
+    ViewBag.MenuHead = "Management";
+    ViewBag.Controller = "Class";
+    ViewBag.Action = "List";
+    ViewBag.Title = "Class Management";
+    int i = 1;
+}
+
+@model IEnumerable<Class>
+
+    <div class="card card-info card-outline">
+        <div class="card-header d-flex align-items-center">
+            <h3 class="card-title"><i class="fas fa-book"></i> &ensp; Class List</h3>
+
+            <button type="button" class="btn btn-outline-success btn-sm ml-auto" data-toggle="modal"
+                data-target="#addClassModal">
+                <i class="fas fa-plus"></i>&nbsp; Add Class
+            </button>
+        </div>
+
+        <div class="card-body p-0">
+            @if (Model.Count() > 0)
+{
+            <table class="table table-striped projects" id="courseList">
+                <thead>
+                    <tr>
+                        <th style="">No</th>
+                        <th>Class Name</th>
+                        <th>Description</th>
+                        <th class="text-center">Created At</th>
+                        <th class="text-center">Updated At</th>
+                        <th class="text-center" style="">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td style="width: 1%" class="text-right">@i</td>
+                            <td style="width: 20%">@c.ClassName</td>
+                            <td style="width: 20%" >
+                                <span title="@(c.Description ?? "No description.")">
+                                    @if (string.IsNullOrEmpty(c.Description))
+                                    {
+                                        @("No description.")
+                                    }
+                                    else if (c.Description.Length > 60)
+                                    {
+                                        @(c.Description.Substring(0, 60) + "...")
+                                    }
+                                    else
+                                    {
+                                        @(c.Description)
+                                    }
+                                </span>
+                            </td>
+                            <td style="width: 9%" class="text-center">@c.CreatedAt</td>
+                            <td style="width: 9%" class="text-center">@(c.UpdatedAt.HasValue ? c.UpdatedAt.ToString()
+                        : "Not updated yet.")</td>
+                            <td class="text-center" style="width: 15%">
+                                <a asp-controller="Class" asp-action="Details" asp-route-classId="@c.ClassId"
+                                    class="btn btn-info btn-sm">
+                                    <i class="fas fa-eye"></i>&ensp; Details
+                                </a>
+                                <button class="btn btn-danger btn-sm delete-class-button" data-class-id="@c.ClassId"
+                                    data-class-name="@c.ClassName" data-class-desc="@c.Description"
+                                    data-toggle="modal" data-target="#deleteClassModal">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+
+                            </td>
+
+                        </tr>
+                        i++;
+                    }
+                </tbody>
+            </table>
+}
+        </div>
+    </div>
+
+
+
+<div class="modal fade" id="addClassModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="modal-title"><i class="fas fa-circle-plus"></i>&nbsp; Add New Class</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group ">
+                    <label>Workspace</label>
+                    <div id="selectedWorkspace"> </div>
+                </div>
+
+                <div class="form-group">
+                        <label>Class Name </label>
+                        <input type="text" class="form-control" id="newClassName" maxlength="50">
+                </div>
+
+                <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-control" id="newClassDescription" rows="4" maxlength="250"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="saveNewClassButton">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteClassModal" tabindex="-1" role="dialog" aria-labelledby="deleteClassModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteClassModalLabel"><i class="fas fa-exclamation-circle"></i>&nbsp;
+                    Delete
+                    Confirmation</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <dt>Are you sure you want to delete this class?</dt>
+                <br>
+                <dl class="row">
+                    <dt class="col-sm-4">Class Name</dt>
+                    <dd class="col-sm-8" id="deleteClassName"></dd>
+                    <dt class="col-sm-4">Class Description</dt>
+                    <dd class="col-sm-8" id="deleteClassDesc"></dd>
+
+                </dl>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" data-class-id=""
+                    id="confirmDeleteClassButton">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script>
+
+        $(document).ready(function () {
+            $.ajax({
+                url: '@Url.Action("GetWorkspaceSelectList", "Workspace")',
+    
+                type: 'GET',
+                success: function (response) {
+
+                    $('#selectedWorkspace').html(response);
+
+                    $('#workspace').attr('disabled', 'disabled');
+                },
+                error: function (xhr, status, error) {
+                    $('#selectedWorkspace').html("Error loading partial view:");
+                }
+            });
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $('#saveNewClassButton').click(function () {
+                var classData = {
+                    ClassName: $('#newClassName').val(),
+                    Description: $('#newClassDescription').val()
+                };
+
+                $.ajax({
+                    url: '@Url.Action("NewClass", "Class")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(classData),
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: "Class added successfully.",
+                            showConfirmButton: false,
+                            timer: 2000
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            icon: 'error',
+                            title: errorMessage,
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 2000
+                        });
+                    }
+                });
+
+            });
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $('.delete-class-button').on('click', function () {
+                const classId = $(this).data('class-id');
+                $('#deleteClassName').text($(this).data('class-name'));                
+                $('#deleteClassDesc').text($(this).data('class-desc'));
+
+                $('#confirmDeleteClassButton').data('class-id', classId);
+            });
+            $('#confirmDeleteClassButton').on('click', function () {
+
+                const classId = parseInt($(this).data('class-id'));
+
+                const classData = {
+                    ClassId: classId
+                };
+
+                $.ajax({
+                    url: '@Url.Action("DeleteClass", "Class")',
+                    type: 'DELETE',
+                    contentType: 'application/json',
+                    data: JSON.stringify(classData),
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: "Class deleted successfully.",
+                            showConfirmButton: false,
+                            timer: 2000
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            icon: 'error',
+                            title: errorMessage,
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 2000
+                        });
+                    }
+                });
+            });
+        });
+
+    </script>
+
+}
