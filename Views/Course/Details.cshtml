@@ -91,10 +91,6 @@
                     {
                         @("No description.".Trim())
                     }
-                    else if (Model.Description.Length > 60)
-                    {
-                        @(Model.Description.Substring(0, 60).Trim() + "...")
-                    }
                     else
                     {
                         @(Model.Description.Trim())
@@ -119,6 +115,7 @@
             </div>
             <div class="modal-body">
                 <dt>Are you sure you want to delete this course?</dt>
+                <dd>All settings related to this course will be deleted.</dd>
                 <br>
                 <dl class="row">
                     <dt class="col-sm-4">Course Code</dt>

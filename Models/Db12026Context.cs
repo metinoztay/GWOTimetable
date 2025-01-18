@@ -52,45 +52,18 @@ public partial class Db12026Context : DbContext
     public virtual DbSet<Workspace> Workspaces { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            var configuration = new ConfigurationManager();
-            configuration.SetBasePath(Directory.GetCurrentDirectory());
-            configuration.AddJsonFile("appsettings.json");
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=db12026.public.databaseasp.net; Database=db12026; User Id=db12026; Password=qQ_53=pEJa4#; Encrypt=True; TrustServerCertificate=True; MultipleActiveResultSets=True;Connection Timeout=30");
 
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            optionsBuilder.UseSqlServer(connectionString);
-        }
-    }
-    /*
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                var configuration = new ConfigurationManager();
-                configuration.SetBasePath(Directory.GetCurrentDirectory());
-                configuration.AddJsonFile("appsettings.json");
-
-                var connectionString = configuration.GetConnectionString("DefaultConnection");
-                optionsBuilder.UseSqlServer(connectionString);
-            }
-        }
-
-    */
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Class>(entity =>
         {
             entity.HasKey(e => e.ClassId).HasName("PK__Classes");
 
-            entity.Property(e => e.ClassName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+            entity.Property(e => e.ClassName).HasMaxLength(50);
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Description)
-                .HasMaxLength(250)
-                .IsUnicode(false);
+            entity.Property(e => e.Description).HasMaxLength(250);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Workspace).WithMany(p => p.Classes)
@@ -161,13 +134,9 @@ public partial class Db12026Context : DbContext
         {
             entity.HasKey(e => e.ClassRoomId).HasName("PK__ClassRooms");
 
-            entity.Property(e => e.ClassRoomName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+            entity.Property(e => e.ClassRoomName).HasMaxLength(50);
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Description)
-                .HasMaxLength(250)
-                .IsUnicode(false);
+            entity.Property(e => e.Description).HasMaxLength(250);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Workspace).WithMany(p => p.ClassRooms)
@@ -185,16 +154,10 @@ public partial class Db12026Context : DbContext
         {
             entity.HasKey(e => e.CourseId).HasName("PK__Courses");
 
-            entity.Property(e => e.CourseCode)
-                .HasMaxLength(15)
-                .IsUnicode(false);
-            entity.Property(e => e.CourseName)
-                .HasMaxLength(100)
-                .IsUnicode(false);
+            entity.Property(e => e.CourseCode).HasMaxLength(15);
+            entity.Property(e => e.CourseName).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Description)
-                .HasMaxLength(250)
-                .IsUnicode(false);
+            entity.Property(e => e.Description).HasMaxLength(250);
             entity.Property(e => e.PlacementFormat)
                 .HasMaxLength(20)
                 .IsUnicode(false);
@@ -210,9 +173,7 @@ public partial class Db12026Context : DbContext
         {
             entity.HasKey(e => e.DayId).HasName("PK__Days");
 
-            entity.Property(e => e.DayOfWeek)
-                .HasMaxLength(20)
-                .IsUnicode(false);
+            entity.Property(e => e.DayOfWeek).HasMaxLength(20);
 
             entity.HasOne(d => d.Workspace).WithMany(p => p.Days)
                 .HasForeignKey(d => d.WorkspaceId)
@@ -225,21 +186,11 @@ public partial class Db12026Context : DbContext
             entity.HasKey(e => e.EducatorId).HasName("PK__Educators");
 
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Email)
-                .HasMaxLength(100)
-                .IsUnicode(false);
-            entity.Property(e => e.FirstName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.LastName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.ShortName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.Tittle)
-                .HasMaxLength(20)
-                .IsUnicode(false);
+            entity.Property(e => e.Email).HasMaxLength(100);
+            entity.Property(e => e.FirstName).HasMaxLength(50);
+            entity.Property(e => e.LastName).HasMaxLength(50);
+            entity.Property(e => e.ShortName).HasMaxLength(50);
+            entity.Property(e => e.Tittle).HasMaxLength(20);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Workspace).WithMany(p => p.Educators)
@@ -297,12 +248,8 @@ public partial class Db12026Context : DbContext
             entity.HasKey(e => e.RoleId).HasName("PK__Roles");
 
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Description)
-                .HasMaxLength(250)
-                .IsUnicode(false);
-            entity.Property(e => e.RoleName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+            entity.Property(e => e.Description).HasMaxLength(250);
+            entity.Property(e => e.RoleName).HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
         });
 
@@ -311,12 +258,8 @@ public partial class Db12026Context : DbContext
             entity.HasKey(e => e.TimetableId).HasName("PK__Timetables");
 
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Description)
-                .HasMaxLength(250)
-                .IsUnicode(false);
-            entity.Property(e => e.Tag)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+            entity.Property(e => e.Description).HasMaxLength(250);
+            entity.Property(e => e.Tag).HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.TimetableState).WithMany(p => p.Timetables)
@@ -359,27 +302,13 @@ public partial class Db12026Context : DbContext
         {
             entity.HasKey(e => e.TimetablePlacementId).HasName("PK__TimetablePlacements");
 
-            entity.Property(e => e.ClassName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.ClassRoomName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.CourseCode)
-                .HasMaxLength(15)
-                .IsUnicode(false);
-            entity.Property(e => e.CourseName)
-                .HasMaxLength(100)
-                .IsUnicode(false);
-            entity.Property(e => e.DayOfWeek)
-                .HasMaxLength(20)
-                .IsUnicode(false);
-            entity.Property(e => e.EducatorFullName)
-                .HasMaxLength(120)
-                .IsUnicode(false);
-            entity.Property(e => e.EducatorShortName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+            entity.Property(e => e.ClassName).HasMaxLength(50);
+            entity.Property(e => e.ClassRoomName).HasMaxLength(50);
+            entity.Property(e => e.CourseCode).HasMaxLength(15);
+            entity.Property(e => e.CourseName).HasMaxLength(100);
+            entity.Property(e => e.DayOfWeek).HasMaxLength(20);
+            entity.Property(e => e.EducatorFullName).HasMaxLength(120);
+            entity.Property(e => e.EducatorShortName).HasMaxLength(50);
             entity.Property(e => e.EndTime)
                 .HasMaxLength(5)
                 .IsUnicode(false)
@@ -399,12 +328,8 @@ public partial class Db12026Context : DbContext
         {
             entity.HasKey(e => e.TimetableStateId).HasName("PK__TimetableStates");
 
-            entity.Property(e => e.Description)
-                .HasMaxLength(250)
-                .IsUnicode(false);
-            entity.Property(e => e.State)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+            entity.Property(e => e.Description).HasMaxLength(250);
+            entity.Property(e => e.State).HasMaxLength(50);
         });
 
         modelBuilder.Entity<User>(entity =>
@@ -416,19 +341,12 @@ public partial class Db12026Context : DbContext
             entity.Property(e => e.Email)
                 .HasMaxLength(100)
                 .IsUnicode(false);
-            entity.Property(e => e.FirstName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.LastName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+            entity.Property(e => e.FirstName).HasMaxLength(50);
+            entity.Property(e => e.LastName).HasMaxLength(50);
             entity.Property(e => e.PasswordHash)
                 .HasMaxLength(32)
-                .IsUnicode(false)
                 .IsFixedLength();
-            entity.Property(e => e.PhotoUrl)
-                .HasMaxLength(250)
-                .IsUnicode(false);
+            entity.Property(e => e.PhotoUrl).HasMaxLength(250);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
@@ -443,7 +361,6 @@ public partial class Db12026Context : DbContext
 
             entity.Property(e => e.CodeHash)
                 .HasMaxLength(32)
-                .IsUnicode(false)
                 .IsFixedLength();
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.ExpirationAt).HasColumnType("datetime");
@@ -460,13 +377,9 @@ public partial class Db12026Context : DbContext
 
             entity.Property(e => e.WorkspaceId).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Description)
-                .HasMaxLength(250)
-                .IsUnicode(false);
+            entity.Property(e => e.Description).HasMaxLength(250);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
-            entity.Property(e => e.WorkspaceName)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+            entity.Property(e => e.WorkspaceName).HasMaxLength(50);
 
             entity.HasOne(d => d.User).WithMany(p => p.Workspaces)
                 .HasForeignKey(d => d.UserId)

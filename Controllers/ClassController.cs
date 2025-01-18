@@ -32,20 +32,20 @@ namespace GWOTimetable.Controllers
             return View(classes);
         }
 
-        public IActionResult Details(int courseId)
+        public IActionResult Details(int classId)
         {
-            if (courseId == null)
+            if (classId == null)
             {
-                return RedirectToAction("Management", "Course");
+                return RedirectToAction("Management", "Class");
             }
 
-            var course = _context.Courses.FirstOrDefault(c => c.CourseId == courseId);
+            var course = _context.Classes.FirstOrDefault(c => c.ClassId == classId);
             if (course == null)
             {
-                return RedirectToAction("Management", "Course");
+                return RedirectToAction("Management", "Class");
             }
 
-            ViewBag.ActiveTabId = "CourseDetails";
+            ViewBag.ActiveTabId = "ClassDetails";
             return View(course);
         }
 
@@ -62,7 +62,7 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Name cannot be longer than 50 characters!" });
             }
 
-            var classNameRegex = @"^[a-zA-Z0-9\s]+$";
+            var classNameRegex = @"^[a-zA-Z0-9\s]";
             if (!Regex.IsMatch(newClass.ClassName.Trim(), classNameRegex))
             {
                 return BadRequest(new { message = "Class name must contain only letters, numbers." });
@@ -90,70 +90,41 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateClass([FromBody] Course course)
+        public async Task<IActionResult> UpdateClass([FromBody] Class c)
         {
-            if (course.CourseCode.Length > 15)
+            if (c.ClassName.Length > 50)
             {
-                return BadRequest(new { message = "Code cannot be longer than 15 characters!" });
+                return BadRequest(new { message = "Name cannot be longer than 50 characters!" });
             }
 
-            if (course.CourseName.Length > 100)
-            {
-                return BadRequest(new { message = "Name cannot be longer than 100 characters!" });
-            }
-
-            if (course.Description?.Length > 250)
+            if (c.Description?.Length > 250)
             {
                 return BadRequest(new { message = "Description cannot be longer than 250 characters!" });
             }
 
-            if (string.IsNullOrWhiteSpace(course.CourseCode))
-            {
-                return BadRequest(new { message = "Code can not be empty!" });
-            }
-
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (course.CourseId != null && _context.Courses.Any(c => c.CourseCode == course.CourseCode && c.WorkspaceId == selectedWorkspaceId && c.CourseId != course.CourseId))
+            if (c.ClassId != null && _context.Classes.Any(cl => cl.ClassName == c.ClassName && c.WorkspaceId == selectedWorkspaceId && cl.ClassId != c.ClassId))
             {
-                return BadRequest(new { message = "Code is already in use in this workspace!" });
+                return BadRequest(new { message = "Name is already in use in this workspace!" });
             }
 
-            var codeRegex = @"^[a-zA-Z0-9]";
-            if (course.CourseCode.Contains(" ") || !Regex.IsMatch(course.CourseCode.Trim(), codeRegex))
-            {
-                return BadRequest(new { message = "Code must contain only letters and numbers, and cannot contain spaces!" });
-            }
-
-            if (string.IsNullOrWhiteSpace(course.CourseName))
+            if (string.IsNullOrWhiteSpace(c.ClassName))
             {
                 return BadRequest(new { message = "Name cannot be empty!" });
             }
 
             var nameRegex = @"^[a-zA-Z\s]";
-            if (!Regex.IsMatch(course.CourseName.Trim(), nameRegex))
+            if (!Regex.IsMatch(c.ClassName.Trim(), nameRegex))
             {
                 return BadRequest(new { message = "Name must contain only letters!" });
             }
 
-            if (course.WeeklyHourCount == 0)
-            {
-                return BadRequest(new { message = "Please select weekly hour count!" });
-            }
+            var oldClass = await _context.Classes.FirstOrDefaultAsync(cl => cl.ClassId == c.ClassId);
+            oldClass.UpdatedAt = DateTime.Now;
+            oldClass.ClassName = Utilities.ToProperCase(c.ClassName.Trim());
+            oldClass.Description = c.Description.Trim();
 
-            if (string.IsNullOrWhiteSpace(course.PlacementFormat))
-            {
-                return BadRequest(new { message = "Please select a placement format!" });
-            }
-
-            var oldCourse = await _context.Courses.FirstOrDefaultAsync(c => c.CourseId == course.CourseId);
-            oldCourse.UpdatedAt = DateTime.Now;
-            oldCourse.CourseCode = course.CourseCode.ToUpper();
-            oldCourse.CourseName = Utilities.ToProperCase(course.CourseName.Trim());
-            oldCourse.Description = course.Description.Trim();
-            oldCourse.WeeklyHourCount = course.WeeklyHourCount;
-            oldCourse.PlacementFormat = course.PlacementFormat;
-
-            _context.Entry(oldCourse).State = EntityState.Modified;
+            _context.Entry(oldClass).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return Ok();
         }
