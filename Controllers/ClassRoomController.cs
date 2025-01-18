@@ -90,41 +90,41 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateClass([FromBody] Class c)
+        public async Task<IActionResult> UpdateClassRoom([FromBody] ClassRoom classroom)
         {
-            if (c.ClassName.Length > 50)
+            if (classroom.ClassRoomName.Length > 50)
             {
                 return BadRequest(new { message = "Name cannot be longer than 50 characters!" });
             }
 
-            if (c.Description?.Length > 250)
+            if (classroom.Description?.Length > 250)
             {
                 return BadRequest(new { message = "Description cannot be longer than 250 characters!" });
             }
 
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (c.ClassId != null && _context.Classes.Any(cl => cl.ClassName == c.ClassName && c.WorkspaceId == selectedWorkspaceId && cl.ClassId != c.ClassId))
+            if (classroom.ClassRoomId != null && _context.ClassRooms.Any(c => c.ClassRoomName == classroom.ClassRoomName && classroom.WorkspaceId == selectedWorkspaceId && c.ClassRoomId != classroom.ClassRoomId))
             {
                 return BadRequest(new { message = "Name is already in use in this workspace!" });
             }
 
-            if (string.IsNullOrWhiteSpace(c.ClassName))
+            if (string.IsNullOrWhiteSpace(classroom.ClassRoomName))
             {
                 return BadRequest(new { message = "Name cannot be empty!" });
             }
 
             var nameRegex = @"^[a-zA-Z\s]";
-            if (!Regex.IsMatch(c.ClassName.Trim(), nameRegex))
+            if (!Regex.IsMatch(classroom.ClassRoomName.Trim(), nameRegex))
             {
                 return BadRequest(new { message = "Name must contain only letters!" });
             }
 
-            var oldClass = await _context.Classes.FirstOrDefaultAsync(cl => cl.ClassId == c.ClassId);
-            oldClass.UpdatedAt = DateTime.Now;
-            oldClass.ClassName = Utilities.ToProperCase(c.ClassName.Trim());
-            oldClass.Description = c.Description.Trim();
+            var oldClassRoom = await _context.ClassRooms.FirstOrDefaultAsync(c => c.ClassRoomId == classroom.ClassRoomId);
+            oldClassRoom.UpdatedAt = DateTime.Now;
+            oldClassRoom.ClassRoomName = Utilities.ToProperCase(classroom.ClassRoomName.Trim());
+            oldClassRoom.Description = classroom.Description.Trim();
 
-            _context.Entry(oldClass).State = EntityState.Modified;
+            _context.Entry(oldClassRoom).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return Ok();
         }
