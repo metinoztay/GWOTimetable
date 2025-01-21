@@ -137,23 +137,22 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Classroom cannot be empty!" });
             }
 
-            deleteClassroom = await _context.Classrooms
+            var classroom = await _context.Classrooms
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.ClassroomId == deleteClassroom.ClassroomId);
 
-            if (deleteClassroom == null)
+            if (classroom == null)
             {
                 return NotFound(new { message = "Classroom not found!" });
             }
 
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (deleteClassroom.WorkspaceId != selectedWorkspaceId)
+            if (classroom.WorkspaceId != selectedWorkspaceId)
             {
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return Unauthorized(new { message = "You are not authorized to delete this classroom!" });
+                return BadRequest(new { message = "Classroom cannot be deleted!" });
             }
 
-            _context.Classrooms.Remove(deleteClassroom);
+            _context.Classrooms.Remove(classroom);
             await _context.SaveChangesAsync();
             return Ok();
         }

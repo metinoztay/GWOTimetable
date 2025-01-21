@@ -13,7 +13,7 @@ public partial class Educator
 
     public string LastName { get; set; } = null!;
 
-    public string? Tittle { get; set; }
+    public string? Title { get; set; }
 
     public string ShortName { get; set; } = null!;
 

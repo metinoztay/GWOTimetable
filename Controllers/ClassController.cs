@@ -146,6 +146,12 @@ namespace GWOTimetable.Controllers
                 return NotFound(new { message = "Class not found!" });
             }
 
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+            if (c.WorkspaceId != selectedWorkspaceId)
+            {
+                return BadRequest(new { message = "Class cannot be deleted!" });
+            }
+
             _context.Classes.Remove(c);
             await _context.SaveChangesAsync();
             return Ok();

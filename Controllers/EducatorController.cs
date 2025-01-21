@@ -11,11 +11,11 @@ using System.Text.RegularExpressions;
 namespace GWOTimetable.Controllers
 {
     [Authorize(Roles = "User")]
-    public class CourseController : Controller
+    public class EducatorController : Controller
     {
         private readonly Db12026Context _context;
 
-        public CourseController()
+        public EducatorController()
         {
             _context = new Db12026Context();
         }
@@ -25,11 +25,11 @@ namespace GWOTimetable.Controllers
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
             //authentication kontrolü eklenebilir
 
-            var courses = _context.Courses.Where(c => c.WorkspaceId == selectedWorkspaceId).ToList();
+            var educators = _context.Educators.Where(c => c.WorkspaceId == selectedWorkspaceId).ToList();
 
 
-            ViewBag.ActiveTabId = "CourseManagement";
-            return View(courses);
+            ViewBag.ActiveTabId = "EducatorManagement";
+            return View(educators);
         }
 
         public IActionResult Details(int courseId)
@@ -50,67 +50,81 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> NewCourse([FromBody] Course newCourse)
+        public async Task<IActionResult> NewEducator([FromBody] Educator newEducator)
         {
-            if (newCourse.CourseCode.Length > 15)
+
+            if (string.IsNullOrWhiteSpace(newEducator.FirstName) || string.IsNullOrWhiteSpace(newEducator.LastName))
             {
-                return BadRequest(new { message = "Code cannot be longer than 15 characters!" });
+                return BadRequest(new { message = "Firstname and lastname can not be empty!" });
             }
 
-            if (newCourse.CourseName.Length > 100)
+            if (newEducator.FirstName.Length > 50)
             {
-                return BadRequest(new { message = "Name cannot be longer than 100 characters!" });
+                return BadRequest(new { message = "Firstname cannot be longer than 50 characters!" });
             }
 
-            if (newCourse.Description?.Length > 250)
+            if (newEducator.LastName.Length > 50)
             {
-                return BadRequest(new { message = "Description cannot be longer than 250 characters!" });
+                return BadRequest(new { message = "Lastname cannot be longer than 50 characters!" });
             }
 
-            if (string.IsNullOrWhiteSpace(newCourse.CourseCode))
+            if (newEducator.Title.Length > 20)
             {
-                return BadRequest(new { message = "Code can not be empty!" });
+                return BadRequest(new { message = "Title cannot be longer than 20 characters!" });
+            }
+
+
+
+            var nameRegex = @"^[a-zA-Z\.]+$";
+            if (!Regex.IsMatch(newEducator.FirstName, nameRegex) || !Regex.IsMatch(newEducator.LastName, nameRegex) || !Regex.IsMatch(newEducator.Title, nameRegex))
+            {
+                return BadRequest(new { message = "Firstname, lastname and title can only contain letters and periods!" });
+            }
+
+            if (string.IsNullOrWhiteSpace(newEducator.ShortName))
+            {
+                return BadRequest(new { message = "Shortname cannot be empty!" });
+            }
+
+            if (newEducator.ShortName.Length > 20)
+            {
+                return BadRequest(new { message = "Shortname cannot be longer than 20 characters!" });
             }
 
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (_context.Courses.Any(c => c.CourseCode == newCourse.CourseCode && c.WorkspaceId == selectedWorkspaceId))
+            if (_context.Educators.Any(c => c.ShortName == newEducator.ShortName && c.WorkspaceId == selectedWorkspaceId))
             {
-                return BadRequest(new { message = "Code is already in use in this workspace!" });
+                return BadRequest(new { message = "Shortname is already in use in this workspace!" });
             }
 
-            var codeRegex = @"^[a-zA-Z0-9]";
-            if (newCourse.CourseCode.Contains(" ") || !Regex.IsMatch(newCourse.CourseCode.Trim(), codeRegex))
+            var codeRegex = @"^[a-zA-Z]";
+            if (newEducator.ShortName.Contains(" ") || !Regex.IsMatch(newEducator.ShortName.Trim(), codeRegex))
             {
-                return BadRequest(new { message = "Code must contain only letters and numbers, and cannot contain spaces!" });
+                return BadRequest(new { message = "Shortname must contain only letters and cannot contain spaces!" });
             }
 
-            if (string.IsNullOrWhiteSpace(newCourse.CourseName))
+            if (string.IsNullOrWhiteSpace(newEducator.Email))
             {
-                return BadRequest(new { message = "Name cannot be empty!" });
+                return BadRequest(new { message = "Email cannot be empty!" });
             }
 
-            var nameRegex = @"^[a-zA-Z\s]";
-            if (!Regex.IsMatch(newCourse.CourseName.Trim(), nameRegex))
+            var emailRegex = @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$";
+            if (!Regex.IsMatch(newEducator.Email, emailRegex))
             {
-                return BadRequest(new { message = "Name must contain only letters!" });
+                return BadRequest(new { message = "Email is not valid!" });
             }
 
-            if (newCourse.WeeklyHourCount == 0)
+            if (_context.Educators.Any(c => c.Email == newEducator.Email && c.WorkspaceId == selectedWorkspaceId))
             {
-                return BadRequest(new { message = "Please select weekly hour count!" });
+                return BadRequest(new { message = "Email is already in use in this workspace!" });
             }
 
-            if (string.IsNullOrWhiteSpace(newCourse.PlacementFormat))
-            {
-                return BadRequest(new { message = "Please select a placement format!" });
-            }
-
-            newCourse.CreatedAt = DateTime.Now;
-            newCourse.CourseCode = newCourse.CourseCode.ToUpper();
-            newCourse.CourseName = Utilities.ToProperCase(newCourse.CourseName.Trim());
-            newCourse.WorkspaceId = selectedWorkspaceId;
-            newCourse.Description = newCourse.Description.Trim();
-            _context.Courses.Add(newCourse);
+            newEducator.CreatedAt = DateTime.Now;
+            newEducator.Title = Utilities.ToProperCase(newEducator.Title.Trim());
+            newEducator.FirstName = Utilities.ToProperCase(newEducator.FirstName.Trim());
+            newEducator.LastName = Utilities.ToProperCase(newEducator.LastName.Trim());
+            newEducator.WorkspaceId = selectedWorkspaceId;
+            _context.Educators.Add(newEducator);
             await _context.SaveChangesAsync();
             return Ok();
         }
@@ -185,28 +199,30 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteCourse([FromBody] Course deleteCourse)
+        public async Task<IActionResult> DeleteEducator([FromBody] Educator deleteEducator)
         {
-            if (deleteCourse == null)
+
+            if (deleteEducator == null)
             {
-                return BadRequest(new { message = "Course cannot be empty!" });
+                return BadRequest(new { message = "Educator cannot be empty!" });
             }
 
-            var course = await _context.Courses
+            var educator = await _context.Educators
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.CourseId == deleteCourse.CourseId);
+                .FirstOrDefaultAsync(c => c.EducatorId == deleteEducator.EducatorId);
 
-            if (course == null)
+            if (educator == null)
             {
-                return NotFound(new { message = "Course not found!" });
+                return NotFound(new { message = "Educator not found!" });
             }
 
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (course.WorkspaceId != selectedWorkspaceId)
+            if (educator.WorkspaceId != selectedWorkspaceId)
             {
-                return BadRequest(new { message = "Course cannot be deleted!" });
+                return BadRequest(new { message = "Educator cannot be deleted!" });
             }
-            _context.Courses.Remove(course);
+
+            _context.Educators.Remove(educator);
             await _context.SaveChangesAsync();
             return Ok();
         }
