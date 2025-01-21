@@ -52,17 +52,8 @@ public partial class Db12026Context : DbContext
     public virtual DbSet<Workspace> Workspaces { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            var configuration = new ConfigurationManager();
-            configuration.SetBasePath(Directory.GetCurrentDirectory());
-            configuration.AddJsonFile("appsettings.json");
-
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            optionsBuilder.UseSqlServer(connectionString);
-        }
-    }
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=db12026.public.databaseasp.net; Database=db12026; User Id=db12026; Password=qQ_53=pEJa4#; Encrypt=True; TrustServerCertificate=True; MultipleActiveResultSets=True;Connection Timeout=30");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -198,7 +189,7 @@ public partial class Db12026Context : DbContext
             entity.Property(e => e.Email).HasMaxLength(100);
             entity.Property(e => e.FirstName).HasMaxLength(50);
             entity.Property(e => e.LastName).HasMaxLength(50);
-            entity.Property(e => e.ShortName).HasMaxLength(20);
+            entity.Property(e => e.ShortName).HasMaxLength(10);
             entity.Property(e => e.Title).HasMaxLength(20);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
@@ -317,7 +308,7 @@ public partial class Db12026Context : DbContext
             entity.Property(e => e.CourseName).HasMaxLength(100);
             entity.Property(e => e.DayOfWeek).HasMaxLength(20);
             entity.Property(e => e.EducatorFullName).HasMaxLength(120);
-            entity.Property(e => e.EducatorShortName).HasMaxLength(20);
+            entity.Property(e => e.EducatorShortName).HasMaxLength(10);
             entity.Property(e => e.EndTime)
                 .HasMaxLength(5)
                 .IsUnicode(false)

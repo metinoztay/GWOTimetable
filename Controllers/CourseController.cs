@@ -45,6 +45,12 @@ namespace GWOTimetable.Controllers
                 return RedirectToAction("Management", "Course");
             }
 
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+            if (course.WorkspaceId != selectedWorkspaceId)
+            {
+                return BadRequest(new { message = "Course is not reachable!" });
+            }
+
             ViewBag.ActiveTabId = "CourseDetails";
             return View(course);
         }
@@ -78,7 +84,7 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Code is already in use in this workspace!" });
             }
 
-            var codeRegex = @"^[a-zA-Z0-9]";
+            var codeRegex = @"^[a-zA-Z0-9]+$";
             if (newCourse.CourseCode.Contains(" ") || !Regex.IsMatch(newCourse.CourseCode.Trim(), codeRegex))
             {
                 return BadRequest(new { message = "Code must contain only letters and numbers, and cannot contain spaces!" });
@@ -89,7 +95,7 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Name cannot be empty!" });
             }
 
-            var nameRegex = @"^[a-zA-Z\s]";
+            var nameRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
             if (!Regex.IsMatch(newCourse.CourseName.Trim(), nameRegex))
             {
                 return BadRequest(new { message = "Name must contain only letters!" });
@@ -144,7 +150,7 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Code is already in use in this workspace!" });
             }
 
-            var codeRegex = @"^[a-zA-Z0-9]";
+            var codeRegex = @"^[a-zA-Z0-9]+$";
             if (course.CourseCode.Contains(" ") || !Regex.IsMatch(course.CourseCode.Trim(), codeRegex))
             {
                 return BadRequest(new { message = "Code must contain only letters and numbers, and cannot contain spaces!" });
@@ -155,7 +161,7 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Name cannot be empty!" });
             }
 
-            var nameRegex = @"^[a-zA-Z\s]";
+            var nameRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
             if (!Regex.IsMatch(course.CourseName.Trim(), nameRegex))
             {
                 return BadRequest(new { message = "Name must contain only letters!" });

@@ -39,14 +39,20 @@ namespace GWOTimetable.Controllers
                 return RedirectToAction("Management", "Class");
             }
 
-            var course = _context.Classes.FirstOrDefault(c => c.ClassId == classId);
-            if (course == null)
+            var c = _context.Classes.FirstOrDefault(c => c.ClassId == classId);
+            if (c == null)
             {
                 return RedirectToAction("Management", "Class");
             }
 
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+            if (c.WorkspaceId != selectedWorkspaceId)
+            {
+                return BadRequest(new { message = "Class is not reachable!" });
+            }
+
             ViewBag.ActiveTabId = "ClassDetails";
-            return View(course);
+            return View(c);
         }
 
         [HttpPost]
@@ -62,7 +68,7 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Name cannot be longer than 50 characters!" });
             }
 
-            var classNameRegex = @"^[a-zA-Z0-9\s]";
+            var classNameRegex = @"^[a-zA-Z0-9\sçÇğĞıİöÖşŞüÜ]+$";
             if (!Regex.IsMatch(newClass.ClassName.Trim(), classNameRegex))
             {
                 return BadRequest(new { message = "Class name must contain only letters, numbers." });
@@ -113,7 +119,7 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Name cannot be empty!" });
             }
 
-            var nameRegex = @"^[a-zA-Z\s]";
+            var nameRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
             if (!Regex.IsMatch(c.ClassName.Trim(), nameRegex))
             {
                 return BadRequest(new { message = "Name must contain only letters!" });

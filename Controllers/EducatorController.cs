@@ -32,21 +32,27 @@ namespace GWOTimetable.Controllers
             return View(educators);
         }
 
-        public IActionResult Details(int courseId)
+        public IActionResult Details(int educatorId)
         {
-            if (courseId == null)
+            if (educatorId == null)
             {
-                return RedirectToAction("Management", "Course");
+                return RedirectToAction("Management", "Educator");
             }
 
-            var course = _context.Courses.FirstOrDefault(c => c.CourseId == courseId);
-            if (course == null)
+            var educator = _context.Educators.FirstOrDefault(c => c.EducatorId == educatorId);
+            if (educator == null)
             {
-                return RedirectToAction("Management", "Course");
+                return RedirectToAction("Management", "Educator");
             }
 
-            ViewBag.ActiveTabId = "CourseDetails";
-            return View(course);
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+            if (educator.WorkspaceId != selectedWorkspaceId)
+            {
+                return BadRequest(new { message = "Educator is not reachable!" });
+            }
+
+            ViewBag.ActiveTabId = "EducatorDetails";
+            return View(educator);
         }
 
         [HttpPost]
@@ -73,12 +79,20 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Title cannot be longer than 20 characters!" });
             }
 
-
-
-            var nameRegex = @"^[a-zA-Z\.]+$";
-            if (!Regex.IsMatch(newEducator.FirstName, nameRegex) || !Regex.IsMatch(newEducator.LastName, nameRegex) || !Regex.IsMatch(newEducator.Title, nameRegex))
+            var nameRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
+            if (!Regex.IsMatch(newEducator.FirstName, nameRegex) || !Regex.IsMatch(newEducator.LastName, nameRegex))
             {
-                return BadRequest(new { message = "Firstname, lastname and title can only contain letters and periods!" });
+                return BadRequest(new { message = "Firstname and lastname must contain at least one letter and can contain spaces!" });
+            }
+
+            if (string.IsNullOrWhiteSpace(newEducator.Title))
+            {
+                return BadRequest(new { message = "Title cannot be empty!" });
+            }
+
+            if (!Regex.IsMatch(newEducator.Title, @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ\.]+$"))
+            {
+                return BadRequest(new { message = "Title must contain only letters and dots!" });
             }
 
             if (string.IsNullOrWhiteSpace(newEducator.ShortName))
@@ -86,9 +100,9 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Shortname cannot be empty!" });
             }
 
-            if (newEducator.ShortName.Length > 20)
+            if (newEducator.ShortName.Length > 10)
             {
-                return BadRequest(new { message = "Shortname cannot be longer than 20 characters!" });
+                return BadRequest(new { message = "Shortname cannot be longer than 10 characters!" });
             }
 
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
@@ -97,7 +111,7 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Shortname is already in use in this workspace!" });
             }
 
-            var codeRegex = @"^[a-zA-Z]";
+            var codeRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
             if (newEducator.ShortName.Contains(" ") || !Regex.IsMatch(newEducator.ShortName.Trim(), codeRegex))
             {
                 return BadRequest(new { message = "Shortname must contain only letters and cannot contain spaces!" });
@@ -108,7 +122,7 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Email cannot be empty!" });
             }
 
-            var emailRegex = @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$";
+            var emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             if (!Regex.IsMatch(newEducator.Email, emailRegex))
             {
                 return BadRequest(new { message = "Email is not valid!" });
@@ -130,70 +144,92 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateCourse([FromBody] Course course)
+        public async Task<IActionResult> UpdateEducator([FromBody] Educator educator)
         {
-            if (course.CourseCode.Length > 15)
+            if (string.IsNullOrWhiteSpace(educator.FirstName) || string.IsNullOrWhiteSpace(educator.LastName))
             {
-                return BadRequest(new { message = "Code cannot be longer than 15 characters!" });
+                return BadRequest(new { message = "Firstname and lastname can not be empty!" });
             }
 
-            if (course.CourseName.Length > 100)
+            if (educator.FirstName.Length > 50)
             {
-                return BadRequest(new { message = "Name cannot be longer than 100 characters!" });
+                return BadRequest(new { message = "Firstname cannot be longer than 50 characters!" });
             }
 
-            if (course.Description?.Length > 250)
+            if (educator.LastName.Length > 50)
             {
-                return BadRequest(new { message = "Description cannot be longer than 250 characters!" });
+                return BadRequest(new { message = "Lastname cannot be longer than 50 characters!" });
             }
 
-            if (string.IsNullOrWhiteSpace(course.CourseCode))
+            if (educator.Title.Length > 20)
             {
-                return BadRequest(new { message = "Code can not be empty!" });
+                return BadRequest(new { message = "Title cannot be longer than 20 characters!" });
+            }
+
+            var nameRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
+            if (!Regex.IsMatch(educator.FirstName, nameRegex) || !Regex.IsMatch(educator.LastName, nameRegex))
+            {
+                return BadRequest(new { message = "Firstname and lastname must contain at least one letter and can contain spaces!" });
+            }
+
+            if (string.IsNullOrWhiteSpace(educator.Title))
+            {
+                return BadRequest(new { message = "Title cannot be empty!" });
+            }
+
+            if (!Regex.IsMatch(educator.Title, @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ\.]+$"))
+            {
+                return BadRequest(new { message = "Title must contain only letters and dots!" });
+            }
+
+            if (string.IsNullOrWhiteSpace(educator.ShortName))
+            {
+                return BadRequest(new { message = "Shortname cannot be empty!" });
+            }
+
+            if (educator.ShortName.Length > 10)
+            {
+                return BadRequest(new { message = "Shortname cannot be longer than 10 characters!" });
             }
 
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (course.CourseId != null && _context.Courses.Any(c => c.CourseCode == course.CourseCode && c.WorkspaceId == selectedWorkspaceId && c.CourseId != course.CourseId))
+            if (educator.EducatorId != null && _context.Educators.Any(e => e.ShortName == educator.ShortName && e.WorkspaceId == selectedWorkspaceId && e.EducatorId != educator.EducatorId))
             {
-                return BadRequest(new { message = "Code is already in use in this workspace!" });
+                return BadRequest(new { message = "Shortname is already in use in this workspace!" });
             }
 
-            var codeRegex = @"^[a-zA-Z0-9]";
-            if (course.CourseCode.Contains(" ") || !Regex.IsMatch(course.CourseCode.Trim(), codeRegex))
+            var codeRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
+            if (educator.ShortName.Contains(" ") || !Regex.IsMatch(educator.ShortName.Trim(), codeRegex))
             {
-                return BadRequest(new { message = "Code must contain only letters and numbers, and cannot contain spaces!" });
+                return BadRequest(new { message = "Shortname must contain only letters and cannot contain spaces!" });
             }
 
-            if (string.IsNullOrWhiteSpace(course.CourseName))
+            if (string.IsNullOrWhiteSpace(educator.Email))
             {
-                return BadRequest(new { message = "Name cannot be empty!" });
+                return BadRequest(new { message = "Email cannot be empty!" });
             }
 
-            var nameRegex = @"^[a-zA-Z\s]";
-            if (!Regex.IsMatch(course.CourseName.Trim(), nameRegex))
+            var emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(educator.Email, emailRegex))
             {
-                return BadRequest(new { message = "Name must contain only letters!" });
+                return BadRequest(new { message = "Email is not valid!" });
             }
 
-            if (course.WeeklyHourCount == 0)
+            if (educator.EducatorId != null && _context.Educators.Any(e => e.Email == educator.Email && e.WorkspaceId == selectedWorkspaceId && e.EducatorId != educator.EducatorId))
             {
-                return BadRequest(new { message = "Please select weekly hour count!" });
+                return BadRequest(new { message = "Shortname is already in use in this workspace!" });
             }
 
-            if (string.IsNullOrWhiteSpace(course.PlacementFormat))
-            {
-                return BadRequest(new { message = "Please select a placement format!" });
-            }
+            var oldEducator = await _context.Educators.FirstOrDefaultAsync(c => c.EducatorId == educator.EducatorId);
+            oldEducator.UpdatedAt = DateTime.Now;
+            oldEducator.ShortName = educator.ShortName.Trim().ToUpper();
+            oldEducator.FirstName = Utilities.ToProperCase(educator.FirstName.Trim());
+            oldEducator.LastName = Utilities.ToProperCase(educator.LastName.Trim());
+            oldEducator.Email = educator.Email.ToLower().Trim();
+            oldEducator.Title = Utilities.ToProperCase(educator.Title.Trim());
 
-            var oldCourse = await _context.Courses.FirstOrDefaultAsync(c => c.CourseId == course.CourseId);
-            oldCourse.UpdatedAt = DateTime.Now;
-            oldCourse.CourseCode = course.CourseCode.ToUpper();
-            oldCourse.CourseName = Utilities.ToProperCase(course.CourseName.Trim());
-            oldCourse.Description = course.Description.Trim();
-            oldCourse.WeeklyHourCount = course.WeeklyHourCount;
-            oldCourse.PlacementFormat = course.PlacementFormat;
 
-            _context.Entry(oldCourse).State = EntityState.Modified;
+            _context.Entry(oldEducator).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return Ok();
         }
