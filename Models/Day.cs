@@ -13,6 +13,8 @@ public partial class Day
 
     public byte LessonCount { get; set; }
 
+    public string ShortName { get; set; } = null!;
+
     public virtual ICollection<ClassConstraint> ClassConstraints { get; set; } = new List<ClassConstraint>();
 
     public virtual ICollection<EducatorConstraint> EducatorConstraints { get; set; } = new List<EducatorConstraint>();

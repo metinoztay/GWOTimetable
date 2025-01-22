@@ -22,6 +22,11 @@
     <link rel="stylesheet" href="~/ThemeData/AdminLTE/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="~/ThemeData/AdminLTE/plugins/select2/css/select2.min.css">
     <link rel="stylesheet" href="~/ThemeData/AdminLTE/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
+    <link rel="stylesheet" href="~/ThemeData/AdminLTE/plugins/daterangepicker/daterangepicker.css" />
+    <link rel="stylesheet"
+        href="~/ThemeData/AdminLTE/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css" />
+
+
 </head>
 
 <body class="hold-transition sidebar-mini">
@@ -196,8 +201,16 @@
                                 </p>
                             </a>
                         </li>
+
                         <li class="nav-item">
-                            <a href="../widgets.html" class="nav-link" id="TimeSettings">
+                            <a href="#" class="nav-link" id="EducatorDetails" style="display: none;">
+                                &nbsp; &nbsp; <i class="nav-icon fas fa-circle-info"></i>
+                                <p>Educator Details</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="@Url.Action("Management", "Time")" class="nav-link" id="TimeManagement">
                                 <i class="nav-icon fas fa-clock"></i>
                                 <p>
                                     Time Settings
@@ -286,6 +299,13 @@
     <script src="~/ThemeData/AdminLTE/plugins/bootstrap4-duallistbox/jquery.bootstrap-duallistbox.min.js"></script>
     <script src="~/ThemeData/AdminLTE/plugins/select2/js/select2.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="~/ThemeData/AdminLTE/plugins/moment/moment.min.js"></script>
+    <script src="~/ThemeData/AdminLTE/plugins/inputmask/jquery.inputmask.min.js"></script>
+
+    <script src="~/ThemeData/AdminLTE/plugins/daterangepicker/daterangepicker.js"></script>
+
+    <script src="~/ThemeData/AdminLTE/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"></script>
 
     @RenderSection("Scripts", required: false)
     <script>

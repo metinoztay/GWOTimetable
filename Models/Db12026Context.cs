@@ -174,6 +174,7 @@ public partial class Db12026Context : DbContext
             entity.HasKey(e => e.DayId).HasName("PK__Days");
 
             entity.Property(e => e.DayOfWeek).HasMaxLength(20);
+            entity.Property(e => e.ShortName).HasMaxLength(5);
 
             entity.HasOne(d => d.Workspace).WithMany(p => p.Days)
                 .HasForeignKey(d => d.WorkspaceId)
