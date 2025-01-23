@@ -72,7 +72,7 @@ namespace GWOTimetable.Controllers
 
             if (newLesson.EndTime.CompareTo(newLesson.StartTime) <= 0)
             {
-                return BadRequest(new { message = "End time cannot be equal to or earlier than start time!" });
+                return BadRequest(new { message = "End time cannot be earlier than start time!" });
             }
 
             newLesson.WorkspaceId = selectedWorkspaceId;
@@ -141,6 +141,61 @@ namespace GWOTimetable.Controllers
             return Ok();
         }
 
+        [HttpPut]
+        public async Task<IActionResult> UpdateLessons([FromBody] List<Lesson> lessons)
+        {
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+            lessons = lessons.OrderBy(l => l.LessonNumber).ToList();
+
+
+            string lastEndTime = "00:00";
+
+            foreach (var lesson in lessons)
+            {
+                if (string.IsNullOrWhiteSpace(lesson.StartTime))
+                {
+                    return BadRequest(new { message = "Starting time cannot be empty!" });
+                }
+
+                if (string.IsNullOrWhiteSpace(lesson.EndTime))
+                {
+                    return BadRequest(new { message = "Ending time cannot be empty!" });
+                }
+
+                var timeRegex = new Regex(@"^([0-9]{1,2}):([0-9]{1,2})$");
+                if (!timeRegex.IsMatch(lesson.StartTime))
+                {
+                    return BadRequest(new { message = "Starting time must be in 99:99 format!" });
+                }
+
+                if (!timeRegex.IsMatch(lesson.EndTime))
+                {
+                    return BadRequest(new { message = "Ending time must be in 99:99 format!" });
+                }
+
+                if (lesson.EndTime.CompareTo(lesson.StartTime) <= 0)
+                {
+                    return BadRequest(new { message = "End time cannot be earlier than start time!" });
+                }
+
+                if (lesson.StartTime.CompareTo(lastEndTime) < 0)
+                {
+                    return BadRequest(new { message = "Lesson's start time must be greater than the previous lesson's end time!" });
+                }
+
+                lastEndTime = lesson.EndTime;
+            }
+
+            foreach (var lesson in lessons)
+            {
+                lesson.WorkspaceId = selectedWorkspaceId;
+                _context.Entry(lesson).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok();
+        }
+
         [HttpDelete]
         public async Task<IActionResult> DeleteLesson([FromBody] Lesson deleteLesson)
         {
@@ -172,6 +227,17 @@ namespace GWOTimetable.Controllers
                 .First().LessonId)
             {
                 return BadRequest(new { message = "This lesson cannot be deleted!" });
+            }
+
+            var days = _context.Days.Where(d => d.WorkspaceId == selectedWorkspaceId).ToList();
+            foreach (var day in days)
+            {
+                if (day.LessonCount == lesson.LessonNumber)
+                {
+                    day.LessonCount -= 1;
+                    _context.Entry(day).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
+                }
             }
 
 

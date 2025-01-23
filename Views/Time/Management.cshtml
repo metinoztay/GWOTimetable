@@ -4,6 +4,7 @@
     ViewBag.Action = "Details";
     ViewBag.Title = "Time Details";
     var Lessons = ViewBag.Lessons;
+    int counter = 0;
 }
 @using GWOTimetable.Models;
 @model Workspace
@@ -17,7 +18,7 @@
                     <button type="button" id="saveDaysButton" class="btn btn-outline-success btn-sm ml-1" hidden>
                         <i class="fas fa-save"></i>&nbsp; Save
                     </button>
-                    <button type="button" id="closeEditButton" class="btn btn-outline-info btn-sm ml-1" hidden>
+                    <button type="button" id="closeDaysEditButton" class="btn btn-outline-info btn-sm ml-1" hidden>
                         <i class="fas fa-xmark"></i>&nbsp; Close
                     </button>
                     <button type="button" id="editDaysButton" class="btn btn-outline-info btn-sm ml-1">
@@ -83,8 +84,14 @@
                 <h3 class="card-title"><i class="fas fa-clock"></i> &ensp;Lesson Time Settings</h3>
 
                 <div class="ml-auto">
-                    <button type="button" id="saveTimeButton" class="btn btn-outline-success btn-sm ml-1">
+                    <button type="button" id="saveLessonsButton" class="btn btn-outline-success btn-sm ml-1" hidden>
                         <i class="fas fa-save"></i>&nbsp; Save
+                    </button>
+                    <button type="button" id="closeLessonsEditButton" class="btn btn-outline-info btn-sm ml-1" hidden>
+                        <i class="fas fa-xmark"></i>&nbsp; Close
+                    </button>
+                    <button type="button" id="editLessonsButton" class="btn btn-outline-info btn-sm ml-1">
+                        <i class="fas fa-edit"></i>&nbsp; Edit
                     </button>
                 </div>
             </div>
@@ -107,33 +114,53 @@
                 </div>
                 @foreach (var lesson in Model.Lessons)
                 {
-                    <div class="row">
+                    <div class="row lessons">
                         <div class="form-group col-md-2">
-                            <input type="text" class="form-control" value="@lesson.LessonNumber" disabled>
+                            <input type="text" name="Lessons[@counter].LessonId" class="form-control lesson-Id"
+                                value="@lesson.LessonId" hidden>
+                            <input type="text" name="Lessons[@counter].LessonNumber" class="form-control lesson-number"
+                                value="@lesson.LessonNumber" disabled>
                         </div>
 
                         <div class="form-group col-md-4">
-                            <input type="text" class="form-control" value="@lesson.StartTime" disabled>
+                            <div class="input-group date" id="LessonStartTimePicker-@counter" data-target-input="nearest">
+                                <input type="text" name="Lessons[@counter].StartTime"
+                                    class="form-control datetimepicker-input start-time"
+                                    data-target="#LessonStartTimePicker-@counter" value="@lesson.StartTime" disabled />
+                                <div class="input-group-append" data-target="#LessonStartTimePicker-@counter"
+                                    data-toggle="datetimepicker">
+                                    <div class="input-group-text"><i class="far fa-clock"></i></div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group col-md-4">
-                            <input type="text" class="form-control" value="@lesson.EndTime" disabled>
+                            <div class="input-group date" id="LessonEndTimePicker-@counter" data-target-input="nearest">
+                                <input type="text" name="Lessons[@counter].EndTime"
+                                    class="form-control end-time datetimepicker-input"
+                                    data-target="#LessonEndTimePicker-@counter" value="@lesson.EndTime" disabled />
+                                <div class="input-group-append" data-target="#LessonEndTimePicker-@counter"
+                                    data-toggle="datetimepicker">
+                                    <div class="input-group-text"><i class="far fa-clock"></i></div>
+                                </div>
+                            </div>
                         </div>
 
                         @if (lesson.LessonNumber == Model.Lessons.Count)
                         {
                             <div class="form-group col-md-2">
-                                <button class="btn btn-danger delete-lesson-button" data-lesson-id=@lesson.LessonId
-                                    data-lesson-number=@lesson.LessonNumber data-starting-time=@lesson.StartTime
-                                    data-ending-time=@lesson.EndTime data-toggle="modal" data-target="#deleteLessonModal">
+                                <button class="btn btn-danger delete-lesson-button" id="deleteLessonButton" data-lesson-id="@lesson.LessonId"
+                                    data-lesson-number="@lesson.LessonNumber" data-starting-time="@lesson.StartTime"
+                                    data-ending-time="@lesson.EndTime" data-toggle="modal" data-target="#deleteLessonModal" hidden>
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         }
                     </div>
+                    counter++;
                 }
 
-                <div class="row">
+                <div class="row" id="addNewLessonDiv" hidden>
                     <div class="form-group col-md-2">
                         <input type="text" class="form-control" value="@(@Model.Lessons.Count + 1)" disabled>
                     </div>
@@ -241,14 +268,14 @@
         $(document).ready(function () {
             $('#editDaysButton').click(function () {
                 $('.day-lesson-count,.day-of-week,.day-short-name').removeAttr('disabled');
-                $('#saveDaysButton,#closeEditButton').removeAttr('hidden');
+                $('#saveDaysButton,#closeDaysEditButton').removeAttr('hidden');
                 $('#editDaysButton').attr('hidden', true);
             });
 
 
-            $('#closeEditButton').click(function () {
+            $('#closeDaysEditButton').click(function () {
                 $('.day-lesson-count,.day-of-week,.day-short-name').attr('disabled', true);
-                $('#saveDaysButton,#closeEditButton').attr('hidden', true);
+                $('#saveDaysButton,#closeDaysEditButton').attr('hidden', true);
                 $('#editDaysButton').removeAttr('hidden');
             });
 
@@ -275,6 +302,70 @@
                         Swal.fire({
                             icon: 'success',
                             title: "Day settings updated successfully.",
+                            showConfirmButton: false,
+                            timer: 2000
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            icon: 'error',
+                            title: errorMessage,
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                });
+            });
+
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('#editLessonsButton').click(function () {
+                $('.start-time,.end-time').removeAttr('disabled');
+                $('#saveLessonsButton,#closeLessonsEditButton,#addNewLessonDiv,#deleteLessonButton').removeAttr('hidden');
+                $('#editLessonsButton').attr('hidden', true);
+            });
+
+
+            $('#closeLessonsEditButton').click(function () {
+                $('.start-time,.end-time').attr('disabled', true);
+                $('#saveLessonsButton,#closeLessonsEditButton,#addNewLessonDiv,#deleteLessonButton').attr('hidden', true);
+                $('#editLessonsButton').removeAttr('hidden');
+            });
+
+            $('#saveLessonsButton').click(function () {
+                const rows = document.querySelectorAll(".lessons");
+                const lessons = [];
+
+                rows.forEach(row => {
+                    const lessonId = row.querySelector('input[name$="LessonId"]').value;
+                    const lessonNumber = row.querySelector('input[name$="LessonNumber"]').value;
+                    const startTime = row.querySelector('input[name$="StartTime"]').value;
+                    const endTime = row.querySelector('input[name$="EndTime"]').value;
+
+                    lessons.push({ LessonId: lessonId, LessonNumber: lessonNumber, StartTime: startTime, EndTime: endTime });
+                });
+
+
+                $.ajax({
+                    url: '@Url.Action("UpdateLessons", "Time")',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(lessons),
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: "Lesson settings updated successfully.",
                             showConfirmButton: false,
                             timer: 2000
                         }).then(() => {
@@ -403,13 +494,11 @@
 
     <script>
         $(function () {
-            $('#starttimepicker').datetimepicker({
-                format: 'HH:mm'
-            })
-
-            $('#endtimepicker').datetimepicker({
-                format: 'HH:mm'
-            })
+            document.querySelectorAll('.input-group.date').forEach(element => {
+                $(element).datetimepicker({
+                    format: 'HH:mm'
+                });
+            });
 
         })
     </script>
