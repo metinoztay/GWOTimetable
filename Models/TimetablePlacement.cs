@@ -11,6 +11,8 @@ public partial class TimetablePlacement
 
     public string DayOfWeek { get; set; } = null!;
 
+    public string DayShortName { get; set; } = null!;
+
     public byte LessonNumber { get; set; }
 
     public string StartTime { get; set; } = null!;

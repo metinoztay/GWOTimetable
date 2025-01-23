@@ -14,8 +14,14 @@
                 <h3 class="card-title"><i class="fas fa-calendar"></i> &ensp;Day Settings</h3>
 
                 <div class="ml-auto">
-                    <button type="button" id="saveTimeButton" class="btn btn-outline-success btn-sm ml-1">
+                    <button type="button" id="saveDaysButton" class="btn btn-outline-success btn-sm ml-1" hidden>
                         <i class="fas fa-save"></i>&nbsp; Save
+                    </button>
+                    <button type="button" id="closeEditButton" class="btn btn-outline-info btn-sm ml-1" hidden>
+                        <i class="fas fa-xmark"></i>&nbsp; Close
+                    </button>
+                    <button type="button" id="editDaysButton" class="btn btn-outline-info btn-sm ml-1">
+                        <i class="fas fa-edit"></i>&nbsp; Edit
                     </button>
                 </div>
             </div>
@@ -36,25 +42,35 @@
                 </div>
                 @foreach (var day in Model.Days)
                 {
-                    <div class="row">
+                    <div class="row days">
                         <div class="form-group col-md-6">
-                            <input type="text" class="form-control" value="@day.DayOfWeek" disabled>
+                            <input type="text" name="Days[@@index].DayId" class="form-control day-Id" value="@day.DayId"
+                                hidden>
+                            <input type="text" name="Days[@@index].DayOfWeek" class="form-control day-of-week"
+                                maxlength="20" value="@day.DayOfWeek" disabled>
                         </div>
-
                         <div class="form-group col-md-3">
-                            <input type="text" class="form-control" value="@day.ShortName" disabled>
+                            <input type="text" name="Days[@@index].ShortName" class="form-control day-short-name"
+                                maxlength="5" value="@day.ShortName" disabled>
                         </div>
-
                         <div class="form-group col-md-3">
-                            <select class="form-control select2bs4 select2-hidden-accessible" id="lessonCount" disabled>
-
+                            <select class="form-control select2bs4 day-lesson-count" name="Days[@@index].LessonCount"
+                                disabled>
                                 @for (int s = 0; s <= Model.Lessons.Count(); s++)
                                 {
-                                    <option value=@s>@s</option>
+                                    if (s == day.LessonCount)
+                                    {
+                                        <option selected value=@s>@s</option>
+                                    }
+                                    else
+                                    {
+                                        <option value=@s>@s</option>
+                                    }
                                 }
                             </select>
                         </div>
                     </div>
+
                 }
 
             </div>
@@ -220,6 +236,71 @@
         });
     </script>
 
+
+    <script>
+        $(document).ready(function () {
+            $('#editDaysButton').click(function () {
+                $('.day-lesson-count,.day-of-week,.day-short-name').removeAttr('disabled');
+                $('#saveDaysButton,#closeEditButton').removeAttr('hidden');
+                $('#editDaysButton').attr('hidden', true);
+            });
+
+
+            $('#closeEditButton').click(function () {
+                $('.day-lesson-count,.day-of-week,.day-short-name').attr('disabled', true);
+                $('#saveDaysButton,#closeEditButton').attr('hidden', true);
+                $('#editDaysButton').removeAttr('hidden');
+            });
+
+            $('#saveDaysButton').click(function () {
+                const rows = document.querySelectorAll(".days");
+                const days = [];
+
+                rows.forEach(row => {
+                    const dayId = row.querySelector('input[name$="DayId"]').value;
+                    const dayOfWeek = row.querySelector('input[name$="DayOfWeek"]').value;
+                    const shortName = row.querySelector('input[name$="ShortName"]').value;
+                    const lessonCount = row.querySelector('select[name$="LessonCount"]').value;
+
+                    days.push({ DayId: dayId, DayOfWeek: dayOfWeek, ShortName: shortName, LessonCount: parseInt(lessonCount) });
+                });
+
+
+                $.ajax({
+                    url: '@Url.Action("UpdateDays", "Time")',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(days),
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: "Day settings updated successfully.",
+                            showConfirmButton: false,
+                            timer: 2000
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            icon: 'error',
+                            title: errorMessage,
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                });
+            });
+
+        });
+    </script>
     <script>
         $(document).ready(function () {
             $('#addLessonButton').click(function () {

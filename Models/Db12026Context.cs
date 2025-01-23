@@ -308,6 +308,7 @@ public partial class Db12026Context : DbContext
             entity.Property(e => e.CourseCode).HasMaxLength(15);
             entity.Property(e => e.CourseName).HasMaxLength(100);
             entity.Property(e => e.DayOfWeek).HasMaxLength(20);
+            entity.Property(e => e.DayShortName).HasMaxLength(5);
             entity.Property(e => e.EducatorFullName).HasMaxLength(120);
             entity.Property(e => e.EducatorShortName).HasMaxLength(10);
             entity.Property(e => e.EndTime)
