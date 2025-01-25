@@ -152,6 +152,13 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Class</label>
+                    <select class="form-control select2bs4 select2-hidden-accessible" id="classSelect" disabled>
+                        <option value="@classModel.ClassId">@classModel.ClassName</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label>Course</label>
                     <select class="form-control select2bs4 select2-hidden-accessible" id="courseSelect">
                         <option value="0">Select Course</option>
@@ -396,7 +403,7 @@
         $(document).ready(function () {
             $('#saveNewCourseButton').click(function () {
                 var courseData = {
-                    ClassId: parseInt('@classModel.ClassId'),
+                    ClassId: parseInt($('#classSelect').val()),
                     CourseId: parseInt($('#courseSelect').val()),
                     ClassroomId: parseInt($('#classroomSelect').val()),
                     EducatorId: parseInt($('#educatorSelect').val())

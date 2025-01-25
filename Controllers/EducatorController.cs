@@ -51,8 +51,15 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Educator is not reachable!" });
             }
 
+            var workspace = _context.Workspaces
+                       .Include(w => w.Educators.Where(c => c.EducatorId == educatorId)).ThenInclude(c => c.ClassCourses)
+                       .Include(w => w.Courses)
+                       .Include(w => w.Classes)
+                       .Include(w => w.Classrooms)
+                       .FirstOrDefault(w => w.WorkspaceId == selectedWorkspaceId);
+
             ViewBag.ActiveTabId = "EducatorDetails";
-            return View(educator);
+            return View(workspace);
         }
 
         [HttpPost]
