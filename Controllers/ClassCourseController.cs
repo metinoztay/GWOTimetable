@@ -184,16 +184,16 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteCourse([FromBody] Course deleteCourse)
+        public async Task<IActionResult> DeleteCourse([FromBody] ClassCourse deleteCourse)
         {
             if (deleteCourse == null)
             {
                 return BadRequest(new { message = "Course cannot be empty!" });
             }
 
-            var course = await _context.Courses
+            var course = await _context.ClassCourses
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.CourseId == deleteCourse.CourseId);
+                .FirstOrDefaultAsync(c => c.ClassCourseId == deleteCourse.ClassCourseId);
 
             if (course == null)
             {
@@ -205,7 +205,7 @@ namespace GWOTimetable.Controllers
             {
                 return BadRequest(new { message = "Course cannot be deleted!" });
             }
-            _context.Courses.Remove(course);
+            _context.ClassCourses.Remove(course);
             await _context.SaveChangesAsync();
             return Ok();
         }
