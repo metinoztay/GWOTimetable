@@ -39,11 +39,11 @@ namespace GWOTimetable.Controllers
                 identity.AddClaim(new Claim("WorkspaceId", ws.WorkspaceId.ToString()));
 
                 var workspaceNameClaim = identity.FindFirst("WorkspaceName");
-                if (existingClaim != null)
+                if (workspaceNameClaim != null)
                 {
-                    identity.RemoveClaim(existingClaim);
+                    identity.RemoveClaim(workspaceNameClaim);
                 }
-                identity.AddClaim(new Claim("WorkspaceName", ws.WorkspaceName));
+                identity.AddClaim(new Claim("WorkspaceName", workspaces.Find(w => w.WorkspaceId == ws.WorkspaceId).WorkspaceName));
 
                 var newPrincipal = new ClaimsPrincipal(identity);
 

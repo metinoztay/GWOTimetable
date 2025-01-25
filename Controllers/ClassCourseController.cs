@@ -88,11 +88,11 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Educator not found in this workspace!" });
             }
 
-            if (newCourse.ClassRoomId == 0)
+            if (newCourse.ClassroomId == 0)
             {
                 return BadRequest(new { message = "Please select a classroom!" });
             }
-            if (!_context.Classrooms.Any(cr => cr.ClassroomId == newCourse.ClassRoomId && cr.WorkspaceId == selectedWorkspaceId))
+            if (!_context.Classrooms.Any(cr => cr.ClassroomId == newCourse.ClassroomId && cr.WorkspaceId == selectedWorkspaceId))
             {
                 return BadRequest(new { message = "Classroom not found in this workspace!" });
             }

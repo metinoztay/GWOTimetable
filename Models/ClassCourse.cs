@@ -13,7 +13,7 @@ public partial class ClassCourse
 
     public int CourseId { get; set; }
 
-    public int ClassRoomId { get; set; }
+    public int ClassroomId { get; set; }
 
     public int EducatorId { get; set; }
 
@@ -23,7 +23,7 @@ public partial class ClassCourse
 
     public virtual Class Class { get; set; } = null!;
 
-    public virtual Classroom ClassRoom { get; set; } = null!;
+    public virtual Classroom Classroom { get; set; } = null!;
 
     public virtual Course Course { get; set; } = null!;
 

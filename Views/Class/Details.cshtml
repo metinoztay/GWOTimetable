@@ -114,12 +114,12 @@
                         <td>@c.Course.CourseCode</td>
                         <td>@c.Course.CourseName</td>
                         <td>@c.Educator.Title @c.Educator.FirstName @c.Educator.LastName</td>
-                        <td>@c.ClassRoom.ClassroomName</td>
+                        <td>@c.Classroom.ClassroomName</td>
                         <td>
                             <button class="btn btn-danger btn-sm delete-course-button" data-course-id="@c.ClassCourseId"
                                 data-course-code="@c.Course.CourseCode" data-course-name="@c.Course.CourseName"
                                 data-educator-name="@c.Educator.Title @c.Educator.FirstName @c.Educator.LastName"
-                                data-classroom="@c.ClassRoom.ClassroomName" data-toggle="modal"
+                                data-classroom="@c.Classroom.ClassroomName" data-toggle="modal"
                                 data-target="#deleteCourseModal">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -145,7 +145,8 @@
             <div class="modal-body">
                 <div class="form-group ">
                     <label>Workspace</label>
-                    <select class="form-control select2bs4 select2-hidden-accessible" disabled>
+                    <select class="form-control select2bs4 select2-hidden-accessible" style="width: 100%;" tabindex="-1"
+                        aria-hidden="true" disabled>
                         <option value="0">@User.FindFirstValue("WorkspaceName")</option>
                     </select>
                 </div>
@@ -269,6 +270,16 @@
 </div>
 
 @section Scripts {
+
+    <script>
+        $(document).ready(function () {
+            $('.select2').select2({
+            }).on('select2:unselecting', function (e) {
+                $(this).val(null).trigger('change');
+            });
+        });
+    </script>
+
     <script>
         $(document).ready(function () {
             $('.delete-class-button').on('click', function () {

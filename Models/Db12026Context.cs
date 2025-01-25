@@ -109,8 +109,8 @@ public partial class Db12026Context : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ClassCourses_ClassId");
 
-            entity.HasOne(d => d.ClassRoom).WithMany(p => p.ClassCourses)
-                .HasForeignKey(d => d.ClassRoomId)
+            entity.HasOne(d => d.Classroom).WithMany(p => p.ClassCourses)
+                .HasForeignKey(d => d.ClassroomId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ClassCourses_ClassRoomId");
 
