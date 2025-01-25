@@ -39,11 +39,7 @@ namespace GWOTimetable.Controllers
                 return RedirectToAction("Management", "Class");
             }
 
-            var c = _context.Classes
-            .Include(c => c.ClassCourses).ThenInclude(c => c.Course)
-            .Include(c => c.ClassCourses).ThenInclude(c => c.Educator)
-            .Include(c => c.ClassCourses).ThenInclude(c => c.ClassRoom)
-            .FirstOrDefault(c => c.ClassId == classId);
+            var c = _context.Classes.FirstOrDefault(c => c.ClassId == classId);
 
             if (c == null)
             {
@@ -56,8 +52,15 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Class is not reachable!" });
             }
 
+            var workspace = _context.Workspaces
+            .Include(w => w.Classes.Where(c => c.ClassId == classId)).ThenInclude(c => c.ClassCourses)
+            .Include(w => w.Courses)
+            .Include(w => w.Educators)
+            .Include(w => w.Classrooms)
+            .FirstOrDefault(w => w.WorkspaceId == selectedWorkspaceId);
+
             ViewBag.ActiveTabId = "ClassDetails";
-            return View(c);
+            return View(workspace);
         }
 
         [HttpPost]
@@ -124,10 +127,10 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Name cannot be empty!" });
             }
 
-            var nameRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
+            var nameRegex = @"^[a-zA-Z0-9\sçÇğĞıİöÖşŞüÜ]+$";
             if (!Regex.IsMatch(c.ClassName.Trim(), nameRegex))
             {
-                return BadRequest(new { message = "Name must contain only letters!" });
+                return BadRequest(new { message = "Name must contain only letters and numbers!" });
             }
 
             var oldClass = await _context.Classes.FirstOrDefaultAsync(cl => cl.ClassId == c.ClassId);
