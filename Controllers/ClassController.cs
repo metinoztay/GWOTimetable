@@ -39,7 +39,12 @@ namespace GWOTimetable.Controllers
                 return RedirectToAction("Management", "Class");
             }
 
-            var c = _context.Classes.FirstOrDefault(c => c.ClassId == classId);
+            var c = _context.Classes
+            .Include(c => c.ClassCourses).ThenInclude(c => c.Course)
+            .Include(c => c.ClassCourses).ThenInclude(c => c.Educator)
+            .Include(c => c.ClassCourses).ThenInclude(c => c.ClassRoom)
+            .FirstOrDefault(c => c.ClassId == classId);
+
             if (c == null)
             {
                 return RedirectToAction("Management", "Class");

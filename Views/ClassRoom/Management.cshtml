@@ -1,3 +1,4 @@
+@using System.Security.Claims
 @{
     ViewBag.MenuHead = "Management";
     ViewBag.Controller = "Classroom";
@@ -8,19 +9,19 @@
 
 @model IEnumerable<Classroom>
 
-    <div class="card card-info card-outline">
-        <div class="card-header d-flex align-items-center">
-            <h3 class="card-title"><i class="fas fa-university"></i> &ensp; Classroom List</h3>
+<div class="card card-info card-outline">
+    <div class="card-header d-flex align-items-center">
+        <h3 class="card-title"><i class="fas fa-university"></i> &ensp; Classroom List</h3>
 
-            <button type="button" class="btn btn-outline-success btn-sm ml-auto" data-toggle="modal"
-                data-target="#addClassroomModal">
-                <i class="fas fa-plus"></i>&nbsp; Add Classroom
-            </button>
-        </div>
+        <button type="button" class="btn btn-outline-success btn-sm ml-auto" data-toggle="modal"
+            data-target="#addClassroomModal">
+            <i class="fas fa-plus"></i>&nbsp; Add Classroom
+        </button>
+    </div>
 
-        <div class="card-body p-0">
-            @if (Model.Count() > 0)
-{
+    <div class="card-body p-0">
+        @if (Model.Count() > 0)
+        {
             <table class="table table-striped projects" id="classroomList">
                 <thead>
                     <tr>
@@ -38,7 +39,7 @@
                         <tr>
                             <td style="width: 1%" class="text-right">@i</td>
                             <td style="width: 20%">@c.ClassroomName</td>
-                            <td style="width: 20%" >
+                            <td style="width: 20%">
                                 <span title="@(c.Description ?? "No description.")">
                                     @if (string.IsNullOrEmpty(c.Description))
                                     {
@@ -74,9 +75,9 @@
                     }
                 </tbody>
             </table>
-}
-        </div>
+        }
     </div>
+</div>
 
 
 
@@ -90,17 +91,19 @@
             <div class="modal-body">
                 <div class="form-group ">
                     <label>Workspace</label>
-                    <div id="selectedWorkspace"> </div>
+                    <select class="form-control select2bs4 select2-hidden-accessible" disabled>
+                        <option value="0">@User.FindFirstValue("WorkspaceName")</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                        <label>Classroom Name </label>
-                        <input type="text" class="form-control" id="newClassroomName" maxlength="50">
+                    <label>Classroom Name </label>
+                    <input type="text" class="form-control" id="newClassroomName" maxlength="50">
                 </div>
 
                 <div class="form-group">
-                        <label>Description</label>
-                        <textarea class="form-control" id="newClassroomDescription" rows="4" maxlength="250"></textarea>
+                    <label>Description</label>
+                    <textarea class="form-control" id="newClassroomDescription" rows="4" maxlength="250"></textarea>
                 </div>
 
                 <div class="modal-footer">
@@ -112,8 +115,8 @@
     </div>
 </div>
 
-<div class="modal fade" id="deleteClassroomModal" tabindex="-1" role="dialog" aria-labelledby="deleteClassroomModalLabel"
-    aria-hidden="true">
+<div class="modal fade" id="deleteClassroomModal" tabindex="-1" role="dialog"
+    aria-labelledby="deleteClassroomModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
@@ -147,27 +150,6 @@
 </div>
 
 @section Scripts {
-
-    <script>
-
-        $(document).ready(function () {
-            $.ajax({
-                url: '@Url.Action("GetWorkspaceSelectList", "Workspace")',
-    
-                type: 'GET',
-                success: function (response) {
-
-                    $('#selectedWorkspace').html(response);
-
-                    $('#workspace').attr('disabled', 'disabled');
-                },
-                error: function (xhr, status, error) {
-                    $('#selectedWorkspace').html("Error loading partial view:");
-                }
-            });
-        });
-    </script>
-
     <script>
         $(document).ready(function () {
             $('#saveNewClassroomButton').click(function () {
@@ -216,7 +198,7 @@
         $(document).ready(function () {
             $('.delete-classroom-button').on('click', function () {
                 const classroomId = $(this).data('classroom-id');
-                $('#deleteClassroomName').text($(this).data('classroom-name'));                
+                $('#deleteClassroomName').text($(this).data('classroom-name'));
                 $('#deleteClassroomDesc').text($(this).data('classroom-desc'));
 
                 $('#confirmDeleteClassroomButton').data('classroom-id', classroomId);

@@ -1,3 +1,4 @@
+@using System.Security.Claims
 @{
     ViewBag.MenuHead = "Management";
     ViewBag.Controller = "Educator";
@@ -86,7 +87,9 @@
             <div class="modal-body">
                 <div class="form-group ">
                     <label>Workspace</label>
-                    <div id="selectedWorkspace"> </div>
+                    <select class="form-control select2bs4 select2-hidden-accessible" disabled>
+                        <option value="0">@User.FindFirstValue("WorkspaceName")</option>
+                    </select>
                 </div>
                 <div class="row">
                     <div class="form-group col-md-6">
@@ -163,25 +166,6 @@
 
 @section Scripts {
 
-    <script>
-
-        $(document).ready(function () {
-            $.ajax({
-                url: '@Url.Action("GetWorkspaceSelectList", "Workspace")',
-                // Doğru URL'yi yaz
-                type: 'GET',
-                success: function (response) {
-
-                    $('#selectedWorkspace').html(response);
-
-                    $('#workspace').attr('disabled', 'disabled');
-                },
-                error: function (xhr, status, error) {
-                    $('#selectedWorkspace').html("Error loading partial view:");
-                }
-            });
-        });
-    </script>
 
     <script>
         $(document).ready(function () {

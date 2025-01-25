@@ -56,7 +56,8 @@ namespace GWOTimetable.Controllers
                     new Claim(ClaimTypes.Role,userInformations.Role.RoleName),
                     new Claim("UserId",userInformations.UserId.ToString()),
                     new Claim("PhotoUrl",userInformations.PhotoUrl),
-                    new Claim("WorkspaceId",workspace[0].WorkspaceId.ToString())
+                    new Claim("WorkspaceId",workspace[0].WorkspaceId.ToString()),
+                    new Claim("WorkspaceName",workspace[0].WorkspaceName)
                 };
                 var userIdentity = new ClaimsIdentity(claims, "Login"); //kullanıcı kimliği oluşturuldu
 

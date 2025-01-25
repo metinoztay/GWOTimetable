@@ -38,6 +38,13 @@ namespace GWOTimetable.Controllers
                 }
                 identity.AddClaim(new Claim("WorkspaceId", ws.WorkspaceId.ToString()));
 
+                var workspaceNameClaim = identity.FindFirst("WorkspaceName");
+                if (existingClaim != null)
+                {
+                    identity.RemoveClaim(existingClaim);
+                }
+                identity.AddClaim(new Claim("WorkspaceName", ws.WorkspaceName));
+
                 var newPrincipal = new ClaimsPrincipal(identity);
 
                 await HttpContext.SignInAsync(
