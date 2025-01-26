@@ -62,6 +62,11 @@ namespace GWOTimetable.Controllers
             {
                 return BadRequest(new { message = "Class id cannot be empty!" });
             }
+            if (newCourse.ClassId == 0)
+            {
+                return BadRequest(new { message = "Please select a class!" });
+            }
+
             if (newCourse == null)
             {
                 return BadRequest(new { message = "Course cannot be empty!" });
@@ -115,70 +120,76 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateCourse([FromBody] Course course)
+        public async Task<IActionResult> UpdateCourse([FromBody] ClassCourse updateCourse)
         {
-            if (course.CourseCode.Length > 15)
+            if (updateCourse.ClassCourseId == null)
             {
-                return BadRequest(new { message = "Code cannot be longer than 15 characters!" });
+                return BadRequest(new { message = "ClassCourse cannot be empty!" });
             }
 
-            if (course.CourseName.Length > 100)
+            if (updateCourse.ClassId == null)
             {
-                return BadRequest(new { message = "Name cannot be longer than 100 characters!" });
+                return BadRequest(new { message = "Class cannot be empty!" });
+            }
+            if (updateCourse.ClassId == 0)
+            {
+                return BadRequest(new { message = "Please select a class!" });
             }
 
-            if (course.Description?.Length > 250)
+            if (updateCourse == null)
             {
-                return BadRequest(new { message = "Description cannot be longer than 250 characters!" });
+                return BadRequest(new { message = "Course cannot be empty!" });
             }
 
-            if (string.IsNullOrWhiteSpace(course.CourseCode))
+            if (updateCourse.CourseId == 0)
             {
-                return BadRequest(new { message = "Code can not be empty!" });
+                return BadRequest(new { message = "Please select a course!" });
             }
-
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (course.CourseId != null && _context.Courses.Any(c => c.CourseCode == course.CourseCode && c.WorkspaceId == selectedWorkspaceId && c.CourseId != course.CourseId))
+            var course = _context.ClassCourses.FirstOrDefault(c => c.ClassCourseId == updateCourse.ClassCourseId && c.WorkspaceId == selectedWorkspaceId);
+            if (course == null)
             {
-                return BadRequest(new { message = "Code is already in use in this workspace!" });
+                return BadRequest(new { message = "Course not found in this workspace!" });
             }
 
-            var codeRegex = @"^[a-zA-Z0-9]+$";
-            if (course.CourseCode.Contains(" ") || !Regex.IsMatch(course.CourseCode.Trim(), codeRegex))
+            if (updateCourse.EducatorId == 0)
             {
-                return BadRequest(new { message = "Code must contain only letters and numbers, and cannot contain spaces!" });
+                return BadRequest(new { message = "Please select an educator!" });
             }
 
-            if (string.IsNullOrWhiteSpace(course.CourseName))
+            if (!_context.Educators.Any(e => e.EducatorId == updateCourse.EducatorId && e.WorkspaceId == selectedWorkspaceId))
             {
-                return BadRequest(new { message = "Name cannot be empty!" });
+                return BadRequest(new { message = "Educator not found in this workspace!" });
             }
 
-            var nameRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
-            if (!Regex.IsMatch(course.CourseName.Trim(), nameRegex))
+            if (updateCourse.ClassroomId == 0)
             {
-                return BadRequest(new { message = "Name must contain only letters!" });
+                return BadRequest(new { message = "Please select a classroom!" });
+            }
+            if (!_context.Classrooms.Any(cr => cr.ClassroomId == updateCourse.ClassroomId && cr.WorkspaceId == selectedWorkspaceId))
+            {
+                return BadRequest(new { message = "Classroom not found in this workspace!" });
             }
 
-            if (course.WeeklyHourCount == 0)
+
+            if (!_context.Classes.Any(c => c.ClassId == updateCourse.ClassId && c.WorkspaceId == selectedWorkspaceId))
             {
-                return BadRequest(new { message = "Please select weekly hour count!" });
+                return BadRequest(new { message = "Class not found in this workspace!" });
             }
 
-            if (string.IsNullOrWhiteSpace(course.PlacementFormat))
+            if (_context.ClassCourses.Any(cc => cc.ClassId == updateCourse.ClassId && cc.CourseId == updateCourse.CourseId && cc.ClassCourseId != updateCourse.ClassCourseId))
             {
-                return BadRequest(new { message = "Please select a placement format!" });
+                return BadRequest(new { message = "Course already added to this class!" });
             }
 
-            var oldCourse = await _context.Courses.FirstOrDefaultAsync(c => c.CourseId == course.CourseId);
-            oldCourse.UpdatedAt = DateTime.Now;
-            oldCourse.CourseCode = course.CourseCode.ToUpper();
-            oldCourse.CourseName = Utilities.ToProperCase(course.CourseName.Trim());
-            oldCourse.Description = course.Description.Trim();
-            oldCourse.WeeklyHourCount = course.WeeklyHourCount;
-            oldCourse.PlacementFormat = course.PlacementFormat;
 
-            _context.Entry(oldCourse).State = EntityState.Modified;
+
+            course.ClassId = updateCourse.ClassId;
+            course.CourseId = updateCourse.CourseId;
+            course.ClassroomId = updateCourse.ClassroomId;
+            course.EducatorId = updateCourse.EducatorId;
+            course.UpdatedAt = DateTime.Now;
+            _context.Entry(course).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return Ok();
         }

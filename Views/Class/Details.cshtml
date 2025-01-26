@@ -116,6 +116,13 @@
                         <td>@c.Educator.Title @c.Educator.FirstName @c.Educator.LastName</td>
                         <td>@c.Classroom.ClassroomName</td>
                         <td>
+                            <button class="btn btn-info btn-sm update-course-button" data-classcourse-id="@c.ClassCourseId"
+                                data-course-id="@c.Course.CourseId" data-educator-id="@c.Educator.EducatorId"
+                                data-classroom-id="@c.Classroom.ClassroomId" data-toggle="modal"
+                                data-target="#updateCourseModal">
+                                <i class="fas fa-edit"></i>
+                            </button>
+
                             <button class="btn btn-danger btn-sm delete-course-button" data-course-id="@c.ClassCourseId"
                                 data-course-code="@c.Course.CourseCode" data-course-name="@c.Course.CourseName"
                                 data-educator-name="@c.Educator.Title @c.Educator.FirstName @c.Educator.LastName"
@@ -123,7 +130,6 @@
                                 data-target="#deleteCourseModal">
                                 <i class="fas fa-trash"></i>
                             </button>
-
                         </td>
                     </tr>
                     number++;
@@ -140,7 +146,7 @@
         <div class="modal-content">
             <div class="modal-header bg-success">
                 <h5 class="modal-title"><i class="fas fa-circle-plus"></i>&nbsp; Add New Course</h5>
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group ">
@@ -202,6 +208,73 @@
     </div>
 </div>
 
+<div class="modal fade" id="updateCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title"><i class="fas fa-edit"></i>&nbsp; Update Course</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group ">
+                    <label>Workspace</label>
+                    <select class="form-control select2bs4 select2-hidden-accessible" style="width: 100%;" tabindex="-1"
+                        aria-hidden="true" disabled>
+                        <option value="0">@User.FindFirstValue("WorkspaceName")</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Class</label>
+                    <select class="form-control select2bs4 select2-hidden-accessible" id="updateclassSelect" disabled>
+                        <option value="@classModel.ClassId">@classModel.ClassName</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Course</label>
+                    <select class="form-control select2bs4 select2-hidden-accessible" id="updatecourseSelect">
+                        <option value="0">Select Course</option>
+                        @foreach (var course in Model.Courses)
+                        {
+                            <option value="@course.CourseId">(@course.CourseCode) @course.CourseName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Educator</label>
+
+                    <select class="form-control select2bs4 select2-hidden-accessible" id="updateeducatorSelect">
+                        <option value="0">Select Educator</option>
+                        @foreach (var educator in Model.Educators)
+                        {
+                            <option value="@educator.EducatorId">@educator.Title @educator.FirstName @educator.LastName
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Classroom</label>
+                    <select class="form-control select2bs4 select2-hidden-accessible" id="updateclassroomSelect">
+                        <option value="0">Select Classroom</option>
+                        @foreach (var classroom in Model.Classrooms)
+                        {
+                            <option value="@classroom.ClassroomId">@classroom.ClassroomName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="confirmUpdateCourseButton"
+                        data-classcourse-id="">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="modal fade" id="deleteClassModal" tabindex="-1" role="dialog" aria-labelledby="deleteClassModalLabel"
     aria-hidden="true">
@@ -211,7 +284,7 @@
                 <h5 class="modal-title" id="deleteClassModalLabel"><i class="fas fa-exclamation-circle"></i>&nbsp;
                     Delete
                     Confirmation</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -246,7 +319,7 @@
                 <h5 class="modal-title" id="deleteCourseModalLabel"><i class="fas fa-exclamation-circle"></i>&nbsp;
                     Delete
                     Confirmation</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -269,7 +342,7 @@
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" data-course-id=""
+                <button type="button" class="btn btn-danger" data-classcourse-id=""
                     id="confirmDeleteCourseButton">Delete</button>
             </div>
         </div>
@@ -313,6 +386,63 @@
                         Swal.fire({
                             icon: 'success',
                             title: "Class deleted successfully.",
+                            showConfirmButton: false,
+                            timer: 2000
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            icon: 'error',
+                            title: errorMessage,
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                });
+            });
+        });
+
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $('.update-course-button').on('click', function () {
+                const classcourseId = $(this).data('classcourse-id');
+                $('#updateeducatorSelect').val($(this).data('educator-id')).trigger('change');
+                $('#updateclassSelect').val(@classModel.ClassId).trigger('change');
+                $('#updatecourseSelect').val($(this).data('course-id')).trigger('change');
+                $('#updateclassroomSelect').val($(this).data('classroom-id')).trigger('change');
+
+                $('#confirmUpdateCourseButton').data('classcourse-id', classcourseId);
+            });
+            $('#confirmUpdateCourseButton').on('click', function () {
+
+                var courseData = {
+                    ClassCourseId: parseInt($(this).data('classcourse-id')),
+                    ClassId: @classModel.ClassId,
+                    CourseId: parseInt($('#updatecourseSelect').val()),
+                    ClassroomId: parseInt($('#updateclassroomSelect').val()),
+                    EducatorId: parseInt($('#updateeducatorSelect').val())
+                };
+
+                $.ajax({
+                    url: '@Url.Action("UpdateCourse", "ClassCourse")',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(courseData),
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: "Course updated successfully.",
                             showConfirmButton: false,
                             timer: 2000
                         }).then(() => {
