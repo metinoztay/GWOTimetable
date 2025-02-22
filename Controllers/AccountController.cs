@@ -200,5 +200,137 @@ namespace GWOTimetable.Controllers
 
             return Ok(new { RedirectUrl = $"/Account/Login" });
         }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordDTO newPassword)
+        {
+            if (string.IsNullOrEmpty(newPassword.OldPassword))
+            {
+                return BadRequest(new { message = "Old Password can not be empty!" });
+            }
+
+            if (string.IsNullOrEmpty(newPassword.NewPassword))
+            {
+                return BadRequest(new { message = "New Password cannot be empty!" });
+            }
+
+            if (string.IsNullOrEmpty(newPassword.ComfirmNewPassword))
+            {
+                return BadRequest(new { message = "Please Comfirm New Password!" });
+            }
+
+            string oldPasswordHash = Utilities.CreateHash(newPassword.OldPassword);
+
+            Guid? userId = User.FindFirstValue("UserId") != null ? Guid.Parse(User.FindFirstValue("UserId")) : (Guid?)null;
+            if (userId == null)
+            {
+                return BadRequest(new { message = "User not found!" });
+            }
+
+            User user = _context.Users.FirstOrDefault(u => u.UserId == userId);
+
+            if (user.PasswordHash != oldPasswordHash)
+            {
+                return BadRequest(new { message = "Old Password is incorrect!" });
+            }
+
+            if (newPassword.NewPassword != newPassword.ComfirmNewPassword)
+            {
+                return BadRequest(new { message = "New Passwords do not match!" });
+            }
+
+            string newPasswordHash = Utilities.CreateHash(newPassword.NewPassword);
+
+            user.PasswordHash = newPasswordHash;
+
+            _context.Entry(user).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+
+
+        public IActionResult Profile()
+        {
+            Guid? userId = User.FindFirstValue("UserId") != null ? Guid.Parse(User.FindFirstValue("UserId")) : (Guid?)null;
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            User user = _context.Users.Include(u => u.Role).FirstOrDefault(u => u.UserId == userId);
+
+            ViewBag.ActiveTabId = "Profile";
+            return View(user);
+        }
+
+        public async Task<IActionResult> UpdateProfile([FromBody] User newProfile)
+        {
+            if (string.IsNullOrWhiteSpace(newProfile.PasswordHash))
+            {
+                return BadRequest(new { message = "Password cannot be empty!" });
+            }
+
+            Guid? userId = User.FindFirstValue("UserId") != null ? Guid.Parse(User.FindFirstValue("UserId")) : (Guid?)null;
+            if (userId == null)
+            {
+                return BadRequest(new { message = "User not found!" });
+            }
+            User user = _context.Users.FirstOrDefault(u => u.UserId == userId);
+
+            string hashPassword = Utilities.CreateHash(newProfile.PasswordHash);
+            if (user.PasswordHash != hashPassword)
+            {
+                return BadRequest(new { message = "Password is incorrect!" });
+            }
+
+            if (string.IsNullOrWhiteSpace(newProfile.FirstName) || string.IsNullOrWhiteSpace(newProfile.LastName))
+            {
+                return BadRequest(new { message = "First Name and Last Name cannot be empty!" });
+            }
+            var nameRegex = @"^[a-zA-Z\sçÇğĞıİöÖşŞüÜ]+$";
+            if (!Regex.IsMatch(newProfile.FirstName.Trim(), nameRegex) || !Regex.IsMatch(newProfile.LastName.Trim(), nameRegex))
+            {
+                return BadRequest(new { message = "First Name and Last Name must contain only letters!" });
+            }
+
+            if (string.IsNullOrWhiteSpace(newProfile.Email))
+            {
+                return BadRequest(new { message = "Email can not be empty!" });
+            }
+            var emailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(newProfile.Email.Trim(), emailRegex))
+            {
+                return BadRequest(new { message = "Invalid email format!" });
+            }
+
+
+
+            if (_context.Users.Any(u => u.Email == newProfile.Email.Trim() && u.UserId != user.UserId))
+            {
+                return BadRequest(new { message = "Email is already in use!" });
+            }
+
+
+
+
+            user.PasswordHash = hashPassword;
+            if (user.Email != newProfile.Email.Trim())
+            {
+                user.IsVerified = false;
+            }
+
+            user.LastName = Utilities.ToProperCase(newProfile.LastName.Trim());
+            user.FirstName = Utilities.ToProperCase(newProfile.FirstName.Trim());
+            user.Email = newProfile.Email.Trim().ToLower();
+            user.UpdatedAt = DateTime.Now;
+
+            _context.Entry(user).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
     }
 }
+
+

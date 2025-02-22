@@ -1,0 +1,297 @@
+@{
+    ViewBag.MenuHead = "Profile";
+    ViewBag.Controller = "Account";
+    ViewBag.Action = "Profile";
+    ViewBag.Title = "Profile";
+}
+
+@model User
+@if (!@Model.IsVerified)
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="mb-6 mb-0">
+                <div class="alert alert-warning">
+                    <h5><i class="icon fas fa-exclamation-triangle"></i> Your email address has not been confirmed yet!</h5>
+
+                    You must confirm your email address in order to use the system and for your account security. Please
+                    verify
+                    your account using your email address.
+                </div>
+            </div> <button class="btn btn-success"><i class="fa-solid fa-envelope-circle-check"></i>&nbsp;Comfirm</button>
+        </div>
+    </div>
+}
+
+<div class="card mb-6">
+    <!-- Account -->
+    <div class="card-body">
+        <div style="float: right;">
+            <a href="@Url.Action("Logout", "Account")" class="btn btn-outline-danger">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+        <div class="d-flex align-items-start align-items-sm-center pb-4">
+            <img src="@Model.PhotoUrl" alt="user-avatar" class="d-block rounded" id="uploadedAvatar" width="100"
+                height="100">
+            <div style="width: 15px;"> </div>
+            <div class="button-wrapper">
+                <label for="upload" class="btn btn-outline-success me-3 mb-4" tabindex="0"><i
+                        class="fa-solid fa-arrow-up-from-bracket"></i> &nbsp;Upload new photo
+
+                    <input type="file" id="upload" class="account-file-input" hidden="" accept="image/png, image/jpeg">
+                </label>
+                <button type="button" class="btn btn-outline-secondary account-image-reset mb-4">
+                    <i class="fa-solid fa-eraser"></i>&nbsp;
+                    Reset
+                </button>
+                <div class="text-muted">Allowed JPG, JPEG or PNG.</div>
+
+            </div>
+
+        </div>
+        <hr class="">
+    </div>
+
+
+    <div class="card-body pt-1">
+        <div id="formAccountSettings">
+            <div class="row">
+                <div class="form-group col-md-6">
+                    <label>Role </label>
+                    <input type="text" class="form-control" value="@Model.Role.RoleName" disabled>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Created At </label>
+                    <input type="text" class="form-control" value="@Model.CreatedAt" disabled>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Updated At </label>
+                    <input type="text" class="form-control"
+                        value="@(Model.UpdatedAt.HasValue? Model.UpdatedAt.ToString() : "Not updated yet.")" disabled>
+                </div>
+
+                <div class="form-group col-md-6">
+                    <label>First Name</label>
+                    <input type="text" class="form-control" id="firstName" value="@Model.FirstName">
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Last Name </label>
+                    <input type="text" class="form-control" id="lastName" value="@Model.LastName">
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Email </label>
+                    <input type="text" class="form-control" id="email" value="@Model.Email">
+                </div>
+                <div class="form-group col-md-6">
+                    <label style="color: transparent;">&nbsp;</label>
+                    <div style="display: flex; justify-content: flex-end; gap: 5px;">
+                        <button class="btn btn-info" data-toggle="modal" data-target="#updatePasswordModal">
+                            <i class="fas fa-key"></i> &nbsp;Change Password
+                        </button>
+                        <button type="submit" class="btn btn-success" data-toggle="modal"
+                            data-target="#updateProfileComfirmModal"><i class="fas fa-floppy-disk"></i>&nbsp; Save
+                            Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /Account -->
+</div>
+
+<div class="modal fade" id="updatePasswordModal" tabindex="-1">
+    <div class="modal-dialog ">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title"><i class="fas fa-key"></i>&nbsp;Change Password</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Old Password</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="oldPassword" maxlength="30">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleOldPassword"><i
+                                    class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="newPassword" maxlength="30">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleNewPassword"><i
+                                    class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="confirmNewPassword" maxlength="30">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword"><i
+                                    class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="confirmUpdatePasswordButton">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="updateProfileComfirmModal" tabindex="-1">
+    <div class="modal-dialog ">
+        <div class="modal-content">
+            <div class="modal-header bg-lightblue">
+                <h5 class="modal-title"><i class="fas fa-lock"></i>&nbsp;Comfirm Password</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Account Password</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="comfirmPassword" maxlength="50">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleComfirmPassword"><i
+                                    class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="confirmUpdateProfileButton">Comfirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#confirmUpdatePasswordButton').on('click', function () {
+                var passwordData = {
+                    OldPassword: $('#oldPassword').val(),
+                    NewPassword: $('#newPassword').val(),
+                    ComfirmNewPassword: $('#confirmNewPassword').val()
+                };
+
+                $.ajax({
+                    url: '@Url.Action("UpdatePassword", "Account")',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(passwordData),
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: "Password changed successfully. You can login with new password!",
+                            showConfirmButton: true,
+                        }).then(() => {
+                            window.location.href = '@Url.Action("Logout", "Account")';
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            icon: 'error',
+                            title: errorMessage,
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                });
+            });
+        });
+
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('#confirmUpdateProfileButton').on('click', function () {
+                var profileData = {
+                    FirstName: $('#firstName').val(),
+                    LastName: $('#lastName').val(),
+                    Email: $('#email').val(),
+                    PasswordHash: $('#comfirmPassword').val()
+                };
+
+                $.ajax({
+                    url: '@Url.Action("UpdateProfile", "Account")',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(profileData),
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: "Profile updated successfully!",
+                            showConfirmButton: false,
+                            timer: 2000
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            icon: 'error',
+                            title: errorMessage,
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                });
+            });
+        });
+
+    </script>
+    <script>
+        // Şifreyi göstermek ve gizlemek için fonksiyonlar
+        function togglePassword(inputId, buttonId) {
+            var input = document.getElementById(inputId);
+            var button = document.getElementById(buttonId);
+            if (input.type === "password") {
+                input.type = "text";
+                button.innerHTML = '<i class="fas fa-eye-slash"></i>';  // Göz simgesini gizli simgesiyle değiştir
+            } else {
+                input.type = "password";
+                button.innerHTML = '<i class="fas fa-eye"></i>';  // Göz simgesini normal simgesiyle değiştir
+            }
+        }
+
+        // Butonlara tıklanıldığında şifreyi göster veya gizle
+        document.getElementById('toggleComfirmPassword').addEventListener('click', function () {
+            togglePassword('comfirmPassword', 'toggleComfirmPassword');
+        });
+        document.getElementById('toggleOldPassword').addEventListener('click', function () {
+            togglePassword('oldPassword', 'toggleOldPassword');
+        });
+        document.getElementById('toggleNewPassword').addEventListener('click', function () {
+            togglePassword('newPassword', 'toggleNewPassword');
+        });
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function () {
+            togglePassword('confirmNewPassword', 'toggleConfirmPassword');
+        });
+    </script>
+}
