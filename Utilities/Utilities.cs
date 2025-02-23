@@ -61,4 +61,22 @@ public static class Utilities
             }
         }
     }
+
+    public static string GenerateVerificationCode(int length)
+    {
+        var rand = new Random();
+        var code = string.Empty;
+        for (var i = 0; i < length; i++)
+        {
+            code += rand.Next(10).ToString();
+        }
+        return code;
+    }
+
+    public static bool IsNumeric(string strNumber)
+    {
+        double number;
+        return double.TryParse(strNumber, out number);
+    }
+
 }

@@ -304,15 +304,10 @@ namespace GWOTimetable.Controllers
                 return BadRequest(new { message = "Invalid email format!" });
             }
 
-
-
             if (_context.Users.Any(u => u.Email == newProfile.Email.Trim() && u.UserId != user.UserId))
             {
                 return BadRequest(new { message = "Email is already in use!" });
             }
-
-
-
 
             user.PasswordHash = hashPassword;
             if (user.Email != newProfile.Email.Trim())
@@ -324,12 +319,170 @@ namespace GWOTimetable.Controllers
             user.FirstName = Utilities.ToProperCase(newProfile.FirstName.Trim());
             user.Email = newProfile.Email.Trim().ToLower();
             user.UpdatedAt = DateTime.Now;
-
             _context.Entry(user).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+
+            var identity = (ClaimsIdentity)User.Identity;
+            var emailClaim = identity.FindFirst("Email");
+            if (emailClaim != null)
+            {
+                identity.RemoveClaim(emailClaim);
+            }
+            identity.AddClaim(new Claim("Email", user.Email));
+
+            var firstnameClaim = identity.FindFirst("FirstName");
+            if (firstnameClaim != null)
+            {
+                identity.RemoveClaim(firstnameClaim);
+            }
+            identity.AddClaim(new Claim("FirstName", user.FirstName));
+
+            var lastnameClaim = identity.FindFirst("LastName");
+            if (lastnameClaim != null)
+            {
+                identity.RemoveClaim(lastnameClaim);
+            }
+            identity.AddClaim(new Claim("LastName", user.LastName));
+
+            var newPrincipal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                newPrincipal,
+                new AuthenticationProperties
+                {
+                    IsPersistent = true
+                }
+            );
+
+
             return Ok();
         }
 
+        [HttpPost]
+        public async Task<IActionResult> SendVerificationCode()
+        {
+            Guid? userId = User.FindFirstValue("UserId") != null ? Guid.Parse(User.FindFirstValue("UserId")) : (Guid?)null;
+            if (userId == null)
+            {
+                return BadRequest(new { message = "User not found!" });
+            }
+            User user = _context.Users.FirstOrDefault(u => u.UserId == userId);
+
+            if (user.IsVerified)
+            {
+                return BadRequest(new { message = "User is already verified!" });
+            }
+
+            VerificationCode verification = _context.VerificationCodes.FirstOrDefault(v => v.UserId == user.UserId);
+            if (verification != null && verification.ExpirationAt > DateTime.Now)
+            {
+                string waitTime = (verification.ExpirationAt - DateTime.Now).ToString(@"mm\:ss");
+                return BadRequest(new { message = "Verification code has been sent. The time you have to wait before you can send the code again: \n\n" + waitTime });
+            }
+
+            if (verification != null)
+            {
+                _context.VerificationCodes.Remove(verification);
+                await _context.SaveChangesAsync();
+            }
+
+            string verificationCode = Utilities.GenerateVerificationCode(6);
+            string verificationCodeHash = Utilities.CreateHash("123456");
+
+            VerificationCode newCode = new VerificationCode()
+            {
+                UserId = user.UserId,
+                CodeHash = verificationCodeHash,
+                CreatedAt = DateTime.Now,
+                ExpirationAt = DateTime.Now.AddMinutes(5)
+            };
+            _context.VerificationCodes.Add(newCode);
+            await _context.SaveChangesAsync();
+            //burada mail gönderilecek
+
+            return Ok(new { RedirectUrl = $"/Account/Verify" });
+        }
+
+        public IActionResult Verify()
+        {
+            Guid? userId = User.FindFirstValue("UserId") != null ? Guid.Parse(User.FindFirstValue("UserId")) : (Guid?)null;
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+            User user = _context.Users.FirstOrDefault(u => u.UserId == userId);
+            if (user.IsVerified)
+            {
+                return RedirectToAction("Dashboard", "Home");
+            }
+
+            VerificationCode verification = _context.VerificationCodes.FirstOrDefault(v => v.UserId == user.UserId);
+            if (verification == null)
+            {
+                return RedirectToAction("Profile", "Account");
+            }
+
+            if (verification.ExpirationAt < DateTime.Now)
+            {
+                return RedirectToAction("Profile", "Account");
+            }
+
+            return View();
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> ComfirmVerificationCode([FromBody] VerificationCodeDTO verificationCode)
+        {
+            if (string.IsNullOrEmpty(verificationCode.Code))
+            {
+                return BadRequest(new { message = "Verification code cannot be empty!" });
+            }
+
+            if (verificationCode.Code.Length != 6)
+            {
+                return BadRequest(new { message = "Verification code must be 6 characters!" });
+            }
+
+            if (!Utilities.IsNumeric(verificationCode.Code))
+            {
+                return BadRequest(new { message = "Verification code must be numeric!" });
+            }
+
+            Guid? userId = User.FindFirstValue("UserId") != null ? Guid.Parse(User.FindFirstValue("UserId")) : (Guid?)null;
+            if (userId == null)
+            {
+                return BadRequest(new { message = "User not found!" });
+            }
+            User user = _context.Users.FirstOrDefault(u => u.UserId == userId);
+
+            if (user.IsVerified)
+            {
+                return BadRequest(new { message = "User is already verified!" });
+            }
+
+            VerificationCode verification = _context.VerificationCodes.FirstOrDefault(v => v.UserId == user.UserId);
+            if (verification == null)
+            {
+                return BadRequest(new { message = "Verification code not found!" });
+            }
+
+            if (verification.ExpirationAt < DateTime.Now)
+            {
+                return BadRequest(new { message = "Verification code has expired!" });
+            }
+
+            if (verification.CodeHash != Utilities.CreateHash(verificationCode.Code))
+            {
+                return BadRequest(new { message = "Verification code is incorrect!" });
+            }
+
+            user.IsVerified = true;
+            _context.Entry(user).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Verification successful!" });
+        }
     }
 }
 

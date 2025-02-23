@@ -12,13 +12,14 @@
         <div class="card-body">
             <div class="mb-6 mb-0">
                 <div class="alert alert-warning">
-                    <h5><i class="icon fas fa-exclamation-triangle"></i> Your email address has not been confirmed yet!</h5>
+                    <h5><i class="icon fas fa-exclamation-triangle"></i> Your email address has not been verificated yet!
+                    </h5>
 
-                    You must confirm your email address in order to use the system and for your account security. Please
-                    verify
-                    your account using your email address.
+                    You must comfirm your email address in order to use the system and for your account security. Please
+                    verify your account using your email address.
                 </div>
-            </div> <button class="btn btn-success"><i class="fa-solid fa-envelope-circle-check"></i>&nbsp;Comfirm</button>
+            </div> <button class="btn btn-success" id="sendVerificationCode"><i
+                    class="fa-solid fa-paper-plane"></i>&nbsp;Send Code</button>
         </div>
     </div>
 }
@@ -244,6 +245,46 @@
                             timer: 2000
                         }).then(() => {
                             location.reload();
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            icon: 'error',
+                            title: errorMessage,
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                });
+            });
+        });
+
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $('#sendVerificationCode').on('click', function () {
+                $.ajax({
+                    url: '@Url.Action("SendVerificationCode", "Account")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(),
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: "Verification code has been sent! You are being redirected.",
+                            showConfirmButton: false,
+                            timerProgressBar: true,
+                            timer: 3000
+                        }).then(() => {
+                            window.location.href = response.redirectUrl;
                         });
                     },
                     error: function (xhr, status, error) {
