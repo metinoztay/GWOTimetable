@@ -37,16 +37,17 @@
                 height="100">
             <div style="width: 15px;"> </div>
             <div class="button-wrapper">
-                <label for="upload" class="btn btn-outline-success me-3 mb-4" tabindex="0"><i
+                <label for="profilePhotoInput" class="btn btn-outline-success me-3 mb-4" tabindex="0"><i
                         class="fa-solid fa-arrow-up-from-bracket"></i> &nbsp;Upload new photo
 
-                    <input type="file" id="upload" class="account-file-input" hidden="" accept="image/png, image/jpeg">
+                    <input type="file" id="profilePhotoInput" class="account-file-input" hidden=""
+                        accept="image/png, image/jpeg">
                 </label>
-                <button type="button" class="btn btn-outline-secondary account-image-reset mb-4">
+                <button type="button" id="resetPhoto" class="btn btn-outline-secondary account-image-reset mb-4">
                     <i class="fa-solid fa-eraser"></i>&nbsp;
                     Reset
                 </button>
-                <div class="text-muted">Allowed JPG, JPEG or PNG.</div>
+                <div class="text-muted">Allowed JPG, JPEG or PNG. Maximum size of 2MB. </div>
 
             </div>
 
@@ -307,6 +308,104 @@
         });
 
     </script>
+
+    <script>
+        document.getElementById('profilePhotoInput').addEventListener('change', function () {
+            const photoInput = document.getElementById('profilePhotoInput');
+            const photo = photoInput.files[0];
+
+            if (photo) {
+
+                const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                if (!validImageTypes.includes(photo.type)) {
+                    Swal.fire({
+                        toast: true,
+                        icon: 'error',
+                        title: "Please select a photo which has valid extension (JPEG, JPG, PNG).",
+                        position: 'top',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                    return;
+                }
+
+                if (photo.size > 2 * 1024 * 1024) {
+                    Swal.fire({
+                        toast: true,
+                        icon: 'error',
+                        title: "Please upload a file smaller than 2MB.",
+                        position: 'top',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                    return;
+                }
+
+                const photoData = new FormData();
+                photoData.append('file', photo);
+
+                fetch('@Url.Action("UploadPhoto", "Account")', {
+                    method: 'POST',
+                    body: photoData
+                })
+                    .then(response => {
+                        location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            } else {
+                Swal.fire({
+                    toast: true,
+                    icon: 'error',
+                    title: "Please select a file to upload your profile photo.",
+                    position: 'top',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $('#resetPhoto').on('click', function () {
+                $.ajax({
+                    url: '@Url.Action("ResetPhoto", "Account")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(),
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: "Your profile photo has been reset.",
+                            showConfirmButton: false,
+                            timer: 2000
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            icon: 'error',
+                            title: errorMessage,
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                });
+            });
+        });
+
+    </script>
+
     <script>
         // Şifreyi göstermek ve gizlemek için fonksiyonlar
         function togglePassword(inputId, buttonId) {

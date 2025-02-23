@@ -7,6 +7,11 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Text.RegularExpressions;
 
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using System.Reflection.Metadata;
+
 
 namespace GWOTimetable.Controllers
 {
@@ -483,6 +488,131 @@ namespace GWOTimetable.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Verification successful!" });
         }
+
+        private readonly string _uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/UserProfilePhotos");
+        [HttpPost]
+        public async Task<IActionResult> UploadPhoto(IFormFile file)
+        {
+            Guid? userGuid = User.FindFirstValue("UserId") != null ? Guid.Parse(User.FindFirstValue("UserId")) : (Guid?)null;
+            if (userGuid == null)
+            {
+                return BadRequest(new { message = "User not found!" });
+            }
+            User user = _context.Users.FirstOrDefault(u => u.UserId == userGuid);
+
+            if (user == null)
+            {
+                return BadRequest(new { message = "User not found!" });
+            }
+            string userId = user.UserId.ToString();
+
+            if (!Directory.Exists(_uploadPath))
+            {
+                Directory.CreateDirectory(_uploadPath);
+            }
+
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "Lütfen bir dosya yükleyin." });
+
+            var validImageTypes = new[] { "image/jpeg", "image/jpg", "image/png" };
+            if (!validImageTypes.Contains(file.ContentType))
+                return BadRequest(new { message = "Please select only a valid photo file (JPEG, PNG, JPG)." });
+
+            if (file.Length > 2 * 1024 * 1024)
+            {
+                return BadRequest(new { message = "Please upload a file smaller than 2MB." });
+            }
+
+
+            var fileName = Path.GetFileName($"user_{userId}{Path.GetExtension(file.FileName)}");
+            var filePath = Path.Combine(_uploadPath, fileName);
+
+            using (var image = Image.Load(file.OpenReadStream()))
+            {
+
+                image.Mutate(x => x.Resize(new ResizeOptions
+                {
+                    Mode = ResizeMode.Stretch,
+                    Size = new Size(400, 400)
+                }));
+
+
+                var encoder = new JpegEncoder
+                {
+                    Quality = 75
+                };
+
+                await image.SaveAsync(filePath, encoder);
+            }
+
+
+            user.PhotoUrl = $"{Request.Scheme}://{Request.Host}//images//UserProfilePhotos//{fileName}";
+            _context.Entry(user).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+
+            var identity = (ClaimsIdentity)User.Identity;
+            var photoClaim = identity.FindFirst("PhotoUrl");
+            if (photoClaim != null)
+            {
+                identity.RemoveClaim(photoClaim);
+            }
+            identity.AddClaim(new Claim("PhotoUrl", user.PhotoUrl));
+
+            var newPrincipal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                newPrincipal,
+                new AuthenticationProperties
+                {
+                    IsPersistent = true
+                }
+            );
+
+            return Ok();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPhoto()
+        {
+
+            Guid? userGuid = User.FindFirstValue("UserId") != null ? Guid.Parse(User.FindFirstValue("UserId")) : (Guid?)null;
+            if (userGuid == null)
+            {
+                return BadRequest(new { message = "User not found!" });
+            }
+            User user = _context.Users.FirstOrDefault(u => u.UserId == userGuid);
+            if (user == null)
+            {
+                return BadRequest(new { message = "User not found!" });
+            }
+            user.PhotoUrl = $"{Request.Scheme}://{Request.Host}/ThemeData/defaultAvatar.jpg";
+            _context.Entry(user).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            var identity = (ClaimsIdentity)User.Identity;
+            var photoClaim = identity.FindFirst("PhotoUrl");
+            if (photoClaim != null)
+            {
+                identity.RemoveClaim(photoClaim);
+            }
+            identity.AddClaim(new Claim("PhotoUrl", user.PhotoUrl));
+
+            var newPrincipal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                newPrincipal,
+                new AuthenticationProperties
+                {
+                    IsPersistent = true
+                }
+            );
+
+            return Ok();
+        }
+
     }
 }
 
