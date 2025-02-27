@@ -33,7 +33,7 @@
     <div class="card-body">
         <div class="form-group ">
             <label>Workspace</label>
-            <select class="form-control select2bs4 select2-hidden-accessible" disabled>
+            <select class="form-control select2bs4 select2-hidden-accessible" disabled style="width: 100%;">
                 <option value="0">@User.FindFirstValue("WorkspaceName")</option>
             </select>
         </div>
@@ -63,7 +63,8 @@
             </div>
             <div class="form-group col-md-6">
                 <label>Weekly Hour Count</label>
-                <select class="form-control select2bs4 select2-hidden-accessible" id="weeklyHourCount" disabled>
+                <select class="form-control select2bs4 select2-hidden-accessible" id="weeklyHourCount" disabled
+                    style="width: 100%;">
                     <option value="0">Select Weekly Hour Count</option>
                     @for (int s = 1; s <= 10; s++)
                     {
@@ -75,14 +76,14 @@
                         {
                             <option value=@s>@s Hour</option>
                         }
-
                     }
                 </select>
             </div>
 
             <div class="form-group col-md-6">
                 <label>Placement Format</label>
-                <select class="form-control select2bs4 select2-hidden-accessible" id="placementFormat" disabled>
+                <select class="form-control select2bs4 select2-hidden-accessible" id="placementFormat" disabled
+                    style="width: 100%;">
                     <option>@Model.PlacementFormat</option>
                 </select>
             </div>
@@ -92,11 +93,11 @@
                 <textarea class="form-control" id="courseDescription" rows="2" maxlength="250" disabled>
                     @if (string.IsNullOrEmpty(Model.Description))
                     {
-                        @("No description.".Trim())
+                                    @("No description.".Trim())
                     }
                     else
                     {
-                        @(Model.Description.Trim())
+                                    @(Model.Description.Trim())
                     }
                 </textarea>
             </div>

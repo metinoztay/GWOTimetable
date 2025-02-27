@@ -33,7 +33,7 @@
     <div class="card-body">
         <div class="form-group ">
             <label>Workspace</label>
-            <select class="form-control select2bs4 select2-hidden-accessible" disabled>
+            <select class="form-control select2bs4 select2-hidden-accessible" disabled style="width: 100%;">
                 <option value="0">@User.FindFirstValue("WorkspaceName")</option>
             </select>
         </div>
@@ -64,11 +64,11 @@
                 <textarea class="form-control" id="classroomDescription" rows="2" maxlength="250" disabled>
                     @if (string.IsNullOrEmpty(Model.Description))
                     {
-                        @("No description.".Trim())
+                            @("No description.".Trim())
                     }
                     else
                     {
-                        @(Model.Description.Trim())
+                            @(Model.Description.Trim())
                     }
                 </textarea>
             </div>

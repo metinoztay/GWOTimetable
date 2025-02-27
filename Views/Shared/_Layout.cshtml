@@ -40,7 +40,7 @@
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
                 </li>
                 <li class="nav-item">
-                    <div id="workspaceContainer" style="width: 430px;"> </div>
+                    <div id="workspaceContainer" style="width: max(200px, min(430px, 100%));"> </div>
                 </li>
 
 
@@ -248,7 +248,7 @@
 
             <!-- Main content -->
             <section class="content">
-                <div class="container-fluid">
+                <div style="width: 100%; overflow-x: auto;" class="container-fluid">
                     @RenderBody()
                 </div>
             </section>
