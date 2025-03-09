@@ -56,6 +56,8 @@ namespace GWOTimetable.Controllers
                        .Include(w => w.Courses)
                        .Include(w => w.Classes)
                        .Include(w => w.Classrooms)
+                       .Include(w => w.Days)
+                       .Include(w => w.Lessons)
                        .FirstOrDefault(w => w.WorkspaceId == selectedWorkspaceId);
 
             ViewBag.ActiveTabId = "EducatorDetails";
