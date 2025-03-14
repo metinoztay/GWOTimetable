@@ -9,7 +9,7 @@
 @using GWOTimetable.Models;
 @model Workspace
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-xl-6">
         <div class="card card-info card-outline">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title"><i class="fas fa-calendar"></i> &ensp;Day Settings</h3>
@@ -29,32 +29,32 @@
 
             <div class="card-body">
                 <div class="row">
-                    <div class="form-group col-md-6">
+                    <div class="form-group col-6">
                         <label>Day of Week</label>
                     </div>
 
-                    <div class="form-group col-md-3">
+                    <div class="form-group col-3">
                         <label>Short Name</label>
                     </div>
 
-                    <div class="form-group col-md-3">
+                    <div class="form-group col-3">
                         <label>Lesson Count</label>
                     </div>
                 </div>
                 @foreach (var day in Model.Days)
                 {
                     <div class="row days">
-                        <div class="form-group col-md-6">
+                        <div class="form-group col-6">
                             <input type="text" name="Days[@@index].DayId" class="form-control day-Id" value="@day.DayId"
                                 hidden>
                             <input type="text" name="Days[@@index].DayOfWeek" class="form-control day-of-week"
                                 maxlength="20" value="@day.DayOfWeek" disabled>
                         </div>
-                        <div class="form-group col-md-3">
+                        <div class="form-group col-3">
                             <input type="text" name="Days[@@index].ShortName" class="form-control day-short-name"
                                 maxlength="5" value="@day.ShortName" disabled>
                         </div>
-                        <div class="form-group col-md-3">
+                        <div class="form-group col-3">
                             <select class="form-control select2bs4 day-lesson-count" name="Days[@@index].LessonCount"
                                 disabled>
                                 @for (int s = 0; s <= Model.Lessons.Count(); s++)
@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <div class="col-md-6">
+    <div class="col-xl-6">
         <div class="card card-info card-outline">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title"><i class="fas fa-clock"></i> &ensp;Lesson Time Settings</h3>
@@ -100,29 +100,29 @@
 
 
                 <div class="row">
-                    <div class="form-group col-md-2">
+                    <div class="form-group col-2">
                         <label>Number</label>
                     </div>
 
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-4">
                         <label>Starting Time</label>
                     </div>
 
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-4">
                         <label>Ending Time</label>
                     </div>
                 </div>
                 @foreach (var lesson in Model.Lessons)
                 {
                     <div class="row lessons">
-                        <div class="form-group col-md-2">
+                        <div class="form-group col-2">
                             <input type="text" name="Lessons[@counter].LessonId" class="form-control lesson-Id"
                                 value="@lesson.LessonId" hidden>
                             <input type="text" name="Lessons[@counter].LessonNumber" class="form-control lesson-number"
                                 value="@lesson.LessonNumber" disabled>
                         </div>
 
-                        <div class="form-group col-md-4">
+                        <div class="form-group col-4">
                             <div class="input-group date" id="LessonStartTimePicker-@counter" data-target-input="nearest">
                                 <input type="text" name="Lessons[@counter].StartTime"
                                     class="form-control datetimepicker-input start-time"
@@ -134,7 +134,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group col-md-4">
+                        <div class="form-group col-4">
                             <div class="input-group date" id="LessonEndTimePicker-@counter" data-target-input="nearest">
                                 <input type="text" name="Lessons[@counter].EndTime"
                                     class="form-control end-time datetimepicker-input"
@@ -148,7 +148,7 @@
 
                         @if (lesson.LessonNumber == Model.Lessons.Count)
                         {
-                            <div class="form-group col-md-2">
+                            <div class="form-group col-2">
                                 <button class="btn btn-danger delete-lesson-button" id="deleteLessonButton" data-lesson-id="@lesson.LessonId"
                                     data-lesson-number="@lesson.LessonNumber" data-starting-time="@lesson.StartTime"
                                     data-ending-time="@lesson.EndTime" data-toggle="modal" data-target="#deleteLessonModal" hidden>
@@ -161,11 +161,11 @@
                 }
 
                 <div class="row" id="addNewLessonDiv" hidden>
-                    <div class="form-group col-md-2">
+                    <div class="form-group col-2">
                         <input type="text" class="form-control" value="@(@Model.Lessons.Count + 1)" disabled>
                     </div>
 
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-4">
                         <div class="bootstrap-timepicker">
                             <div class="form-group">
                                 <div class="input-group date" id="starttimepicker" data-target-input="nearest">
@@ -180,7 +180,7 @@
                         </div>
                     </div>
 
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-4">
                         <div class="bootstrap-timepicker">
                             <div class="form-group">
                                 <div class="input-group date" id="endtimepicker" data-target-input="nearest">
@@ -196,7 +196,7 @@
 
                     </div>
 
-                    <div class="form-group col-md-2">
+                    <div class="form-group col-2">
                         <button class="btn btn-success" id="addLessonButton">
                             <i class="fas fa-plus"></i>
                         </button>

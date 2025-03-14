@@ -68,11 +68,11 @@
                 <textarea class="form-control" id="classDescription" rows="2" maxlength="250" disabled>
                     @if (string.IsNullOrEmpty(Model.Description))
                     {
-                                        @("No description.".Trim())
+                        @("No description.".Trim())
                     }
                     else
                     {
-                                        @(classModel.Description.Trim())
+                       @(classModel.Description.Trim())
                     }
                 </textarea>
             </div>
@@ -118,7 +118,7 @@
                         <td>@c.Educator.Title @c.Educator.FirstName @c.Educator.LastName</td>
                         <td>@c.Classroom.ClassroomName</td>
                         <td>
-                            <button class="btn btn-info btn-sm update-course-button" data-classcourse-id="@c.ClassCourseId"
+                            <button class="btn btn-info btn-sm update-course-button mb-2 mb-xl-0" data-classcourse-id="@c.ClassCourseId"
                                 data-course-id="@c.Course.CourseId" data-educator-id="@c.Educator.EducatorId"
                                 data-classroom-id="@c.Classroom.ClassroomId" data-toggle="modal"
                                 data-target="#updateCourseModal">

@@ -14,6 +14,13 @@
             maxLessonCount = day.LessonCount;
     }
 
+    string FindConstraint(int dayId,int lessonId)
+    {
+        Day day = days[dayId];
+        Lesson lesson = lessons[lessonId];        
+
+        return string.Concat(day.DayOfWeek.ToString()," ",lesson.LessonNumber.ToString());
+    }
 }
 @using GWOTimetable.Models;
 @using System.Security.Claims
@@ -170,7 +177,7 @@
                         <td>@c.Classroom.ClassroomName</td>
                         <td>
 
-                            <button class="btn btn-info btn-sm update-course-button" data-classcourse-id="@c.ClassCourseId"
+                            <button class="btn btn-info btn-sm update-course-button mb-2 mb-xl-0" data-classcourse-id="@c.ClassCourseId"
                                 data-course-id="@c.Course.CourseId" data-class-id="@c.Class.ClassId"
                                 data-classroom-id="@c.Classroom.ClassroomId" data-toggle="modal"
                                 data-target="#updateCourseModal">
@@ -200,12 +207,17 @@
 <div class="card card-gray card-outline mt-4">
     <div class="card-header d-flex align-items-center">
         <h3 class="card-title"><i class="fas fa-calendar-days"></i>&nbsp; Schedule</h3>
-
-        <button type="button" class="btn btn-outline-success btn-sm ml-auto" data-toggle="modal"
+    <div class="ml-auto">
+        <button type="button" class="btn btn-outline-secondary btn-sm ml-1" data-toggle="modal"
             data-target="#addCourseModal">
-            <i class="fas fa-plus"></i>&nbsp; Save
+            <i class="fa-solid fa-eraser"></i>&nbsp; Reset
         </button>
-
+        <button type="button" class="btn btn-outline-success btn-sm ml-1" data-toggle="modal"
+            data-target="#addCourseModal">
+            <i class="fas fa-floppy-disk"></i>&nbsp; Save
+        </button>
+        
+        </div>
     </div>
     <div class="card-body p-0 table-responsive">
         <table class="table table-bordered">
@@ -216,7 +228,7 @@
                 {
                     if (day.LessonCount > 0)
                     {
-                        <td style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center;">@day.DayOfWeek</td>
+                        <td style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">@day.DayOfWeek</td>
                     }
 
                 }
@@ -234,17 +246,16 @@
                         {
                             if (i < days[j].LessonCount)
                             {
-
-                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 90px; cursor: pointer;"
-                                    onclick="addCourseClick(@i, @j)" onmouseover="this.style.background='#f5f5f5'"
-                                    onmouseout="this.style.background='white'"></td>
+                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; cursor: pointer; text-align: center; vertical-align: middle;"
+                                    onclick="OpenConstraintSelector(event, @i, @j)" onmouseover="this.style.background='#f5f5f5'"
+                                    onmouseout="this.style.background='white'">
+                                    @FindConstraint(j, i)
+                                </td>
                             }
                             else
                             {
-                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 90px; background-color: #ccc; opacity: 0.5; pointer-events: none;"></td>
+                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ccc; opacity: 0.5; pointer-events: none;"></td>
                             }
-
-
                         }
                     }
                 </tr>
@@ -252,6 +263,8 @@
         </table>
     </div>
 </div>
+
+
 
 <div class="modal fade" id="addCourseModal" tabindex="-1">
     <div class="modal-dialog">
@@ -425,6 +438,22 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" data-course-id=""
                     id="confirmDeleteCourseButton">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="selectConstraint" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary">
+                <h5 class="modal-title"><i class="fas fa-thumbtack"></i>&nbsp; Select Constraint</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="constraintSelectorBody">
+                
+
+                
             </div>
         </div>
     </div>
@@ -708,4 +737,25 @@
 
     </script>
 
+
+    <script>
+            document.addEventListener("click", function (event) {
+            const menu = document.getElementById("contextMenu");
+            if (!menu.contains(event.target)) {
+                menu.style.display = "none";
+            }
+        });
+
+        function OpenConstraintSelector(event, i, j) {
+
+
+            $('#selectConstraint').modal('show');
+        }
+
+        function menuAction(option) {
+            alert(option + " Maddesi Seçildi!");
+            document.getElementById("contextMenu").style.display = "none";
+        }
+
+    </script>
 }

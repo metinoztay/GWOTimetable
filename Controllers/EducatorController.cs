@@ -271,6 +271,16 @@ namespace GWOTimetable.Controllers
             await _context.SaveChangesAsync();
             return Ok();
         }
+
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> AddConstraint([FromBody] Educator newEducator)
+        {
+
+            return null;
+        }
     }
 }
 

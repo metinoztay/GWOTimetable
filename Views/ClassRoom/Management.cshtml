@@ -19,10 +19,10 @@
         </button>
     </div>
 
-    <div class="card-body p-0">
+    <div class="card-body table-responsive p-0">
         @if (Model.Count() > 0)
         {
-            <table class="table table-striped projects" id="classroomList">
+            <table class="table" id="classroomList">
                 <thead>
                     <tr>
                         <th style="">No</th>
@@ -37,9 +37,9 @@
                     @foreach (var c in Model)
                     {
                         <tr>
-                            <td style="width: 1%" class="text-right">@i</td>
-                            <td style="width: 20%">@c.ClassroomName</td>
-                            <td style="width: 20%">
+                            <td class="text-right">@i</td>
+                            <td >@c.ClassroomName</td>
+                            <td >
                                 <span title="@(c.Description ?? "No description.")">
                                     @if (string.IsNullOrEmpty(c.Description))
                                     {
@@ -55,13 +55,13 @@
                                     }
                                 </span>
                             </td>
-                            <td style="width: 9%" class="text-center">@c.CreatedAt</td>
-                            <td style="width: 9%" class="text-center">@(c.UpdatedAt.HasValue ? c.UpdatedAt.ToString()
+                            <td  class="text-center">@c.CreatedAt</td>
+                            <td class="text-center">@(c.UpdatedAt.HasValue ? c.UpdatedAt.ToString()
                         : "Not updated yet.")</td>
-                            <td class="text-center" style="width: 15%">
+                            <td class="text-center" >
                                 <a asp-controller="Classroom" asp-action="Details" asp-route-classroomId="@c.ClassroomId"
-                                    class="btn btn-info btn-sm">
-                                    <i class="fas fa-eye"></i>&ensp; Details
+                                    class="btn btn-info btn-sm mb-2 mb-xl-0">
+                                    <i class="fas fa-eye"></i>
                                 </a>
                                 <button class="btn btn-danger btn-sm delete-classroom-button" data-classroom-id="@c.ClassroomId"
                                     data-classroom-name="@c.ClassroomName" data-classroom-desc="@c.Description"

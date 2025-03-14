@@ -19,10 +19,11 @@
             </button>
         </div>
 
-        <div class="card-body p-0">
+        <div class="card-body table-responsive p-0">
             @if (Model.Count() > 0)
-{
-            <table class="table table-striped projects" id="courseList">
+            {              
+            <div class="">
+            <table class="table" id="courseList">
                 <thead>
                     <tr>
                         <th style="">No</th>
@@ -40,12 +41,12 @@
                     @foreach (var course in Model)
                     {
                         <tr>
-                            <td style="width: 1%" class="text-right">@i</td>
-                            <td style="width: 10%">@course.CourseCode</td>
-                            <td style="width: 20%">@course.CourseName</td>
-                            <td class="text-center" style="width: 8%">@course.WeeklyHourCount</td>
-                            <td class="text-center" style="width: 8%">@course.PlacementFormat</td>
-                            <td style="width: 20%" >
+                            <td class="text-right">@i</td>
+                            <td >@course.CourseCode</td>
+                            <td >@course.CourseName</td>
+                            <td class="text-center" >@course.WeeklyHourCount</td>
+                            <td class="text-center" >@course.PlacementFormat</td>
+                            <td  >
                                 <span title="@(course.Description ?? "No description.")">
                                     @if (string.IsNullOrEmpty(course.Description))
                                     {
@@ -61,13 +62,13 @@
                                     }
                                 </span>
                             </td>
-                            <td style="width: 9%" class="text-center">@course.CreatedAt</td>
-                            <td style="width: 9%" class="text-center">@(course.UpdatedAt.HasValue ? course.UpdatedAt.ToString()
+                            <td class="text-center">@course.CreatedAt</td>
+                            <td  class="text-center">@(course.UpdatedAt.HasValue ? course.UpdatedAt.ToString()
                         : "Not updated yet.")</td>
-                            <td class="text-center" style="width: 15%">
+                            <td class="text-center">
                                 <a asp-controller="Course" asp-action="Details" asp-route-courseId="@course.CourseId"
-                                    class="btn btn-info btn-sm">
-                                    <i class="fas fa-eye"></i>&ensp; Details
+                                    class="btn btn-info btn-sm mb-1 mb-xl-0">
+                                    <i class="fas fa-eye"></i>
                                 </a>
                                 <button class="btn btn-danger btn-sm delete-course-button" data-course-id="@course.CourseId"
                                     data-course-code="@course.CourseCode" data-course-name="@course.CourseName"
@@ -82,6 +83,7 @@
                     }
                 </tbody>
             </table>
+            </div>
 }
         </div>
     </div>
