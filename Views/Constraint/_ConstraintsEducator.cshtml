@@ -63,8 +63,8 @@
                     {
 
                         <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; cursor: pointer; text-align: center; vertical-align: middle;"
-                            onclick="GetConstraintOptions(event, @i, @j)" onmouseover="this.style.background='#f5f5f5'"
-                            onmouseout="this.style.background='white'">
+                            onclick="AddConstraint(event, @days[j].DayId, @lessons[i].LessonId)"
+                            onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
                             @FindConstraint(j, i).ToString()
                         </td>
                     }

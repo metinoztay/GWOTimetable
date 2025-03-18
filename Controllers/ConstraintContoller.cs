@@ -35,6 +35,40 @@ namespace GWOTimetable.Controllers
 
             return PartialView("_ConstraintsEducator", workspace);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> AddConstraintForEducator([FromBody] AddConstraintDTO constraint)
+        {
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+
+            if (constraint.ClassCourseId == 0)
+            {
+                EducatorConstraint educatorConstraint = new EducatorConstraint();
+                educatorConstraint.WorkspaceId = selectedWorkspaceId;
+                educatorConstraint.EducatorId = constraint.EducatorId;
+                educatorConstraint.DayId = constraint.DayId;
+                educatorConstraint.LessonId = constraint.LessonId;
+                educatorConstraint.IsPlaceable = false;
+                _context.EducatorConstraints.Add(educatorConstraint);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                TimetableConstraint tc = new TimetableConstraint();
+                tc.WorkspaceId = selectedWorkspaceId;
+                tc.DayId = constraint.DayId;
+                tc.LessonId = constraint.LessonId;
+                tc.ClassCourseId = constraint.ClassCourseId;
+                _context.TimetableConstraints.Add(tc);
+                await _context.SaveChangesAsync();
+            }
+
+
+            return Ok();
+
+        }
+
     }
 }
 
