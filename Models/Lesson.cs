@@ -17,6 +17,8 @@ public partial class Lesson
 
     public virtual ICollection<ClassConstraint> ClassConstraints { get; set; } = new List<ClassConstraint>();
 
+    public virtual ICollection<ClassroomConstraint> ClassroomConstraints { get; set; } = new List<ClassroomConstraint>();
+
     public virtual ICollection<EducatorConstraint> EducatorConstraints { get; set; } = new List<EducatorConstraint>();
 
     public virtual ICollection<TimetableConstraint> TimetableConstraints { get; set; } = new List<TimetableConstraint>();

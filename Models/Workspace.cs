@@ -23,6 +23,8 @@ public partial class Workspace
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
 
+    public virtual ICollection<ClassroomConstraint> ClassroomConstraints { get; set; } = new List<ClassroomConstraint>();
+
     public virtual ICollection<Classroom> Classrooms { get; set; } = new List<Classroom>();
 
     public virtual ICollection<Course> Courses { get; set; } = new List<Course>();

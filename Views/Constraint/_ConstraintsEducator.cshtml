@@ -1,0 +1,81 @@
+@{
+    List<Day> days = Model.Days.ToList();
+    List<Lesson> lessons = Model.Lessons.ToList();
+    ClassCourse classCourse = Model.ClassCourses.FirstOrDefault();
+    List<TimetableConstraint> timetableConstraints = classCourse.TimetableConstraints.ToList();
+    List<EducatorConstraint> educatorConstraints = classCourse.Educator.EducatorConstraints.ToList();
+    List<ClassConstraint> classConstraints = classCourse.Class.ClassConstraints.ToList();
+    List<ClassroomConstraint> classroomConstraints = classCourse.Classroom.ClassroomConstraints.ToList();
+    int maxLessonCount = 0;
+    foreach (var day in Model.Days)
+    {
+        if (day.LessonCount > maxLessonCount)
+            maxLessonCount = day.LessonCount;
+    }
+
+    bool FindConstraint(int dayIndex, int lessonIndex)
+    {
+        Day day = days[dayIndex];
+        Lesson lesson = lessons[lessonIndex];
+
+        if (timetableConstraints.Any(tc => tc.DayId == day.DayId && tc.LessonId == lesson.LessonId))
+            return true;
+
+        if (classConstraints.Any(c => c.DayId == day.DayId && c.LessonId == lesson.LessonId))
+            return true;
+
+        if (classroomConstraints.Any(cr => cr.DayId == day.DayId && cr.LessonId == lesson.LessonId))
+            return true;
+
+
+        return false;
+    }
+}
+
+@model Workspace
+<table class="table table-bordered">
+
+    <tr>
+        <td style="width: 8%; text-align: center; vertical-align: middle;"></td>
+        @foreach (var day in days)
+        {
+            if (day.LessonCount > 0)
+            {
+                <td
+                    style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">
+                    @day.DayOfWeek</td>
+            }
+
+        }
+    </tr>
+
+    @for (int i = 0; i < maxLessonCount; i++)
+    {
+        <tr>
+            <td style="width: 8%; text-align: center; vertical-align: middle;">
+                @(lessons[i].StartTime)-@(lessons[i].EndTime)</td>
+
+            @for (int j = 0; j < Model.Days.Count(); j++)
+            {
+                if (days[j].LessonCount > 0)
+                {
+                    if (i < days[j].LessonCount)
+                    {
+
+                        <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; cursor: pointer; text-align: center; vertical-align: middle;"
+                            onclick="GetConstraintOptions(event, @i, @j)" onmouseover="this.style.background='#f5f5f5'"
+                            onmouseout="this.style.background='white'">
+                            @FindConstraint(j, i).ToString()
+                        </td>
+                    }
+                    else
+                    {
+                        <td
+                            style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ccc; opacity: 0.5; pointer-events: none;">
+                        </td>
+                    }
+                }
+            }
+        </tr>
+    }
+</table>

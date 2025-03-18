@@ -19,5 +19,7 @@ public partial class Classroom
 
     public virtual ICollection<ClassCourse> ClassCourses { get; set; } = new List<ClassCourse>();
 
+    public virtual ICollection<ClassroomConstraint> ClassroomConstraints { get; set; } = new List<ClassroomConstraint>();
+
     public virtual Workspace Workspace { get; set; } = null!;
 }

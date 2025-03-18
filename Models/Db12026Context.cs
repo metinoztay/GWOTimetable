@@ -148,6 +148,26 @@ public partial class Db12026Context : DbContext
         modelBuilder.Entity<ClassroomConstraint>(entity =>
         {
             entity.HasKey(e => e.ClassroomConstraintId).HasName("PK__ClassRoomConstraints");
+
+            entity.HasOne(d => d.Classroom).WithMany(p => p.ClassroomConstraints)
+                .HasForeignKey(d => d.ClassroomId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ClassroomConstraints_ClassroomId");
+
+            entity.HasOne(d => d.Day).WithMany(p => p.ClassroomConstraints)
+                .HasForeignKey(d => d.DayId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ClassroomConstraints_DayId");
+
+            entity.HasOne(d => d.Lesson).WithMany(p => p.ClassroomConstraints)
+                .HasForeignKey(d => d.LessonId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ClassroomConstraints_LessonId");
+
+            entity.HasOne(d => d.Workspace).WithMany(p => p.ClassroomConstraints)
+                .HasForeignKey(d => d.WorkspaceId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ClassroomConstraints_WorkspaceId");
         });
 
         modelBuilder.Entity<Course>(entity =>
