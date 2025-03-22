@@ -1,11 +1,10 @@
 @{
     List<Day> days = Model.Days.ToList();
     List<Lesson> lessons = Model.Lessons.ToList();
-    ClassCourse classCourse = Model.ClassCourses.FirstOrDefault();
-    List<TimetableConstraint> timetableConstraints = classCourse.TimetableConstraints.ToList();
-    List<EducatorConstraint> educatorConstraints = classCourse.Educator.EducatorConstraints.ToList();
-    List<ClassConstraint> classConstraints = classCourse.Class.ClassConstraints.ToList();
-    List<ClassroomConstraint> classroomConstraints = classCourse.Classroom.ClassroomConstraints.ToList();
+    List<TimetableConstraint> timetableConstraints = Model.TimetableConstraints.ToList();
+    List<EducatorConstraint> educatorConstraints = Model.EducatorConstraints.ToList();
+    List<ClassConstraint> classConstraints = Model.ClassConstraints.ToList();
+    List<ClassroomConstraint> classroomConstraints = Model.ClassroomConstraints.ToList();
     int maxLessonCount = 0;
     foreach (var day in Model.Days)
     {
@@ -13,23 +12,33 @@
             maxLessonCount = day.LessonCount;
     }
 
-    bool FindConstraint(int dayIndex, int lessonIndex)
+    bool FindTimetableConstraint(int dayId, int lessonId)
     {
-        Day day = days[dayIndex];
-        Lesson lesson = lessons[lessonIndex];
+        if (timetableConstraints.Any(tc => tc.DayId == dayId && tc.LessonId == lessonId))
+        {
+            var constraint = timetableConstraints.FirstOrDefault(tc => tc.DayId == dayId && tc.LessonId == lessonId);
+            return true;
+        }
 
-        if (timetableConstraints.Any(tc => tc.DayId == day.DayId && tc.LessonId == lesson.LessonId))
+
+        if (classConstraints.Any(c => c.DayId == dayId && c.LessonId == lessonId))
             return true;
 
-        if (classConstraints.Any(c => c.DayId == day.DayId && c.LessonId == lesson.LessonId))
-            return true;
-
-        if (classroomConstraints.Any(cr => cr.DayId == day.DayId && cr.LessonId == lesson.LessonId))
+        if (classroomConstraints.Any(cr => cr.DayId == dayId && cr.LessonId == lessonId))
             return true;
 
 
         return false;
     }
+
+    bool FindEducatorConstraint(int dayId, int lessonId)
+    {
+        if (educatorConstraints.Any(ec => ec.DayId == dayId && ec.LessonId == lessonId))
+            return true;
+
+        return false;
+    }
+
 }
 
 @model Workspace
@@ -62,11 +71,29 @@
                     if (i < days[j].LessonCount)
                     {
 
-                        <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; cursor: pointer; text-align: center; vertical-align: middle;"
-                            onclick="AddConstraint(event, @days[j].DayId, @lessons[i].LessonId)"
-                            onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
-                            @FindConstraint(j, i).ToString()
-                        </td>
+                        @if (FindTimetableConstraint(days[j].DayId, lessons[i].LessonId))
+                        {
+                            <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ADD8E6; cursor: pointer; text-align: center; vertical-align: middle;"
+                                ondblclick="RemoveConstraint(event, @days[j].DayId, @lessons[i].LessonId)">
+                                @FindTimetableConstraint(days[j].DayId, lessons[i].LessonId).ToString()
+                            </td>
+                        }
+                        else if (FindEducatorConstraint(days[j].DayId, lessons[i].LessonId))
+                        {
+                            <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ffe6e6; cursor: pointer; text-align: center; vertical-align: middle;"
+                                ondblclick="RemoveConstraint(event, @days[j].DayId, @lessons[i].LessonId)">
+                                Closed.
+                            </td>
+                        }
+                        else
+                        {
+                            <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; cursor: pointer; text-align: center; vertical-align: middle;"
+                                onclick="AddConstraint(event, @days[j].DayId, @lessons[i].LessonId)"
+                                onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                                @FindTimetableConstraint(days[j].DayId, lessons[i].LessonId).ToString()
+                            </td>
+                        }
+
                     }
                     else
                     {

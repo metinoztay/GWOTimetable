@@ -750,6 +750,8 @@
 
         $(document).ready(function () {
             $('.constraint-option-button').on('click', function () {
+                $('#constraintTableBody').html();
+                $('#constraintTableBody').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
                 if (selectedConstraintButton) {
                     if (selectedConstraintButton.text().includes("Close")) {
                         selectedConstraintButton.removeClass('text-white');
@@ -767,9 +769,10 @@
 
                 const classcourseId = parseInt($(this).data('classcourse-id'));
                 
-                if (classcourseId != 0) {
+                
                     var classCourse = {
-                        ClassCourseId: classcourseId
+                        ClassCourseId: classcourseId,
+                        EducatorId: @educatorModel.EducatorId,
                     };
 
                     $.ajax({
@@ -795,7 +798,7 @@
                             });
                         }
                     });
-                }
+                
             });
            
         });
@@ -806,7 +809,6 @@
     <script>
         function AddConstraint(event, dayId, lessonId) {
             const classCourseId = parseInt(selectedConstraintButton.data('classcourse-id'));
-            alert(classCourseId);
             var timetableConst = {
                 DayId: parseInt(dayId),
                 LessonId: parseInt(lessonId),
@@ -820,7 +822,7 @@
                         contentType: 'application/json',
                         data: JSON.stringify(timetableConst),
                         success: function (response) {
-                            alert("success");
+                            selectedConstraintButton.click();
                         },
                         error: function (xhr, status, error) {
                             var errorMessage = "An unknown error occurred. Please try again.";
@@ -838,5 +840,42 @@
                         }
                     });
         }
+    </script>
+    <script>
+        function RemoveConstraint(event, dayId, lessonId) {
+            alert("Removed");
+            const classCourseId = parseInt(selectedConstraintButton.data('classcourse-id'));
+            var timetableConst = {
+                DayId: parseInt(dayId),
+                LessonId: parseInt(lessonId),
+                ClassCourseId: classCourseId,
+                EducatorId: @educatorModel.EducatorId,
+            };
+
+             $.ajax({
+                        url: '@Url.Action("RemoveConstraintForEducator", "Constraint")',
+                        type: 'DELETE',
+                        contentType: 'application/json',
+                        data: JSON.stringify(timetableConst),
+                        success: function (response) {
+                            selectedConstraintButton.click();
+                        },
+                        error: function (xhr, status, error) {
+                            var errorMessage = "An unknown error occurred. Please try again.";
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            Swal.fire({
+                                toast: true,
+                                icon: 'error',
+                                title: errorMessage,
+                                position: 'top',
+                                showConfirmButton: false,
+                                timer: 3000
+                            });
+                        }
+                    });
+        }
+        
     </script>
 }
