@@ -213,8 +213,7 @@
             <div class="card-header d-flex align-items-center">
                 <h3 class="card-title"><i class="fas fa-calendar-days"></i>&nbsp; Schedule</h3>
             <div class="ml-auto">
-                <button type="button" class="btn btn-outline-secondary btn-sm ml-1" data-toggle="modal"
-                    data-target="#addCourseModal">
+                <button type="button" class="btn btn-outline-secondary btn-sm ml-1" onclick="ClearConstraints()">
                     <i class="fa-solid fa-eraser"></i>&nbsp; Clear
                 </button>
                
@@ -750,8 +749,8 @@
 
         $(document).ready(function () {
             $('.constraint-option-button').on('click', function () {
-                $('#constraintTableBody').html();
-                $('#constraintTableBody').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
+                $('#constraintTableBody').children('table').first().hide();
+                $('#constraintTableBody').append('<div style="display: flex; align-items: center; justify-content: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.5); z-index: 1;"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
                 if (selectedConstraintButton) {
                     if (selectedConstraintButton.text().includes("Close")) {
                         selectedConstraintButton.removeClass('text-white');
@@ -843,7 +842,7 @@
     </script>
     <script>
         function RemoveConstraint(event, dayId, lessonId) {
-            alert("Removed");
+        
             const classCourseId = parseInt(selectedConstraintButton.data('classcourse-id'));
             var timetableConst = {
                 DayId: parseInt(dayId),
@@ -875,7 +874,40 @@
                             });
                         }
                     });
-        }
-        
+        }        
     </script>
+    <script>
+        function ClearConstraints(event, dayId, lessonId) {         
+            var timetableConst = {                
+                EducatorId: @educatorModel.EducatorId,
+            };
+
+             $.ajax({
+                        url: '@Url.Action("ClearConstraintsForEducator", "Constraint")',
+                        type: 'DELETE',
+                        contentType: 'application/json',
+                        data: JSON.stringify(timetableConst),
+                        success: function (response) {
+                            selectedConstraintButton.click();
+                        },
+                        error: function (xhr, status, error) {
+                            var errorMessage = "An unknown error occurred. Please try again.";
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            Swal.fire({
+                                toast: true,
+                                icon: 'error',
+                                title: errorMessage,
+                                position: 'top',
+                                showConfirmButton: false,
+                                timer: 3000
+                            });
+                        }
+                    });
+        }        
+    </script>
+    
+
 }
+

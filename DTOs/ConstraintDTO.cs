@@ -1,7 +1,7 @@
 
 namespace GWOTimetable.Models;
 
-public class AddConstraintDTO
+public class ConstraintDTO
 {
 
     public int DayId { get; set; }
@@ -15,7 +15,5 @@ public class AddConstraintDTO
     public int ClassId { get; set; }
 
     public int ClassroomId { get; set; }
-
-
 
 }

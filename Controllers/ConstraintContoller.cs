@@ -18,8 +18,6 @@ namespace GWOTimetable.Controllers
             _context = new Db12026Context();
         }
 
-
-
         [HttpPost]
         public async Task<IActionResult> GetConstraintsForEducator([FromBody] ClassCourse classCourse)
         {
@@ -32,10 +30,12 @@ namespace GWOTimetable.Controllers
                 .Include(w => w.Days)
                 .Include(w => w.Lessons)
                 .Include(w => w.EducatorConstraints.Where(e => e.EducatorId == classCourse.EducatorId))
-                .Include(w => w.ClassCourses.Where(c => c.EducatorId == classCourse.EducatorId)).ThenInclude(w => w.TimetableConstraints)
+                .Include(w => w.ClassCourses.Where(c => c.EducatorId == classCourse.EducatorId))
+                    .ThenInclude(c => c.TimetableConstraints)
+                .Include(w => w.ClassCourses)
+                    .ThenInclude(c => c.Course)
+                .Include(w => w.Courses)
                 .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);
-
-
             }
             else
             {
@@ -45,21 +45,23 @@ namespace GWOTimetable.Controllers
                 .Include(w => w.Days)
                 .Include(w => w.Lessons)
                 .Include(w => w.EducatorConstraints.Where(e => e.EducatorId == classCourse.EducatorId))
-                .Include(w => w.ClassCourses.Where(c => c.EducatorId == classCourse.EducatorId)).ThenInclude(w => w.TimetableConstraints)
+                .Include(w => w.ClassCourses.Where(c => c.EducatorId == classCourse.EducatorId))
+                    .ThenInclude(c => c.TimetableConstraints)
+                .Include(w => w.ClassCourses)
+                    .ThenInclude(c => c.Course)
+                .Include(w => w.Courses)
                 .Include(w => w.ClassroomConstraints.Where(cr => cr.ClassroomId == classCourse.ClassroomId))
                 .Include(w => w.ClassConstraints.Where(c => c.ClassId == classCourse.ClassId))
                 .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);
             }
 
-
             return PartialView("_ConstraintsEducator", workspace);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddConstraintForEducator([FromBody] AddConstraintDTO constraint)
+        public async Task<IActionResult> AddConstraintForEducator([FromBody] ConstraintDTO constraint)
         {
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-
 
             if (constraint.ClassCourseId == 0)
             {
@@ -83,31 +85,54 @@ namespace GWOTimetable.Controllers
                 await _context.SaveChangesAsync();
             }
             return Ok();
-
         }
 
         [HttpDelete]
-        public async Task<IActionResult> RemoveConstraintForEducator([FromBody] AddConstraintDTO constraint)
+        public async Task<IActionResult> RemoveConstraintForEducator([FromBody] ConstraintDTO constraint)
         {
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
 
-            if (constraint.ClassCourseId == 0)
+            EducatorConstraint educatorConstraint = _context.EducatorConstraints.FirstOrDefault(ec => ec.EducatorId == constraint.EducatorId && ec.DayId == constraint.DayId && ec.LessonId == constraint.LessonId);
+            if (educatorConstraint != null)
             {
-                EducatorConstraint educatorConstraint = _context.EducatorConstraints.FirstOrDefault(ec => ec.EducatorId == constraint.EducatorId && ec.DayId == constraint.DayId && ec.LessonId == constraint.LessonId);
                 _context.EducatorConstraints.Remove(educatorConstraint);
                 await _context.SaveChangesAsync();
             }
-            else
+
+            TimetableConstraint timetableConstraint = _context.TimetableConstraints.FirstOrDefault(tc => tc.DayId == constraint.DayId && tc.LessonId == constraint.LessonId);
+            if (timetableConstraint != null)
             {
-                TimetableConstraint timetableConstraint = _context.TimetableConstraints.FirstOrDefault(tc => tc.DayId == constraint.DayId && tc.LessonId == constraint.LessonId);
                 _context.TimetableConstraints.Remove(timetableConstraint);
                 await _context.SaveChangesAsync();
             }
-            return Ok();
 
+            return Ok();
         }
 
+        [HttpDelete]
+        public async Task<IActionResult> ClearConstraintsForEducator([FromBody] ConstraintDTO constraint)
+        {
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
 
+            var educatorConstraints = _context.EducatorConstraints.Where(ec => ec.EducatorId == constraint.EducatorId && ec.WorkspaceId == selectedWorkspaceId).ToList();
+            foreach (var ec in educatorConstraints)
+            {
+                _context.EducatorConstraints.Remove(ec);
+            }
+            await _context.SaveChangesAsync();
+
+            var ClassCourses = _context.ClassCourses.Where(cc => cc.EducatorId == constraint.EducatorId && cc.WorkspaceId == selectedWorkspaceId).ToList();
+            foreach (var cc in ClassCourses)
+            {
+                var timetableConstraints = _context.TimetableConstraints.Where(tc => tc.ClassCourseId == cc.ClassCourseId).ToList();
+                foreach (var tc in timetableConstraints)
+                {
+                    _context.TimetableConstraints.Remove(tc);
+                }
+            }
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
     }
 }
-
