@@ -3,9 +3,8 @@
     var daysList = Model.Days.ToList();
     var lessonsList = Model.Lessons.ToList();
     var timetableConstraints = Model.TimetableConstraints.ToList();
-    var educatorConstraints = Model.EducatorConstraints.ToList();
     var classConstraints = Model.ClassConstraints.ToList();
-    var classroomConstraints = Model.ClassroomConstraints.ToList();
+    var educatorConstraints = Model.EducatorConstraints.ToList();
     var classCourses = Model.ClassCourses.ToList();
     var courses = Model.Courses.ToList();
     
@@ -34,22 +33,16 @@
             return $"Class course not found";
         }
 
-        var educatorConstraint = educatorConstraints.FirstOrDefault(ec => ec.DayId == dayId && ec.LessonId == lessonId);
-        if (educatorConstraint != null)
-        {
-            return "Not Available (Educator)";
-        }
-
         var classConstraint = classConstraints.FirstOrDefault(cc => cc.DayId == dayId && cc.LessonId == lessonId);
         if (classConstraint != null)
         {
             return "Not Available (Class)";
         }
 
-        var classroomConstraint = classroomConstraints.FirstOrDefault(cr => cr.DayId == dayId && cr.LessonId == lessonId);
-        if (classroomConstraint != null)
+        var educatorConstraint = educatorConstraints.FirstOrDefault(ec => ec.DayId == dayId && ec.LessonId == lessonId);
+        if (educatorConstraint != null)
         {
-            return "Not Available (Classroom)";
+            return "Not Available (Educator)";
         }
 
         return "";
@@ -58,9 +51,8 @@
     bool HasConstraint(int dayId, int lessonId)
     {
         return timetableConstraints.Any(tc => tc.DayId == dayId && tc.LessonId == lessonId) ||
-               educatorConstraints.Any(ec => ec.DayId == dayId && ec.LessonId == lessonId) ||
                classConstraints.Any(cc => cc.DayId == dayId && cc.LessonId == lessonId) ||
-               classroomConstraints.Any(cr => cr.DayId == dayId && cr.LessonId == lessonId);
+               educatorConstraints.Any(ec => ec.DayId == dayId && ec.LessonId == lessonId);
     }
 
     bool IsSelectedCourseConstraint(int dayId, int lessonId)
@@ -73,19 +65,19 @@
             tc.ClassCourseId == selectedClassCourseId);
     }
 
-    bool IsEducatorConstraint(int dayId, int lessonId)
-    {
-        return educatorConstraints.Any(ec => ec.DayId == dayId && ec.LessonId == lessonId);
-    }
-
     bool IsClassConstraint(int dayId, int lessonId)
     {
         return classConstraints.Any(cc => cc.DayId == dayId && cc.LessonId == lessonId);
     }
 
-    bool IsClassroomConstraint(int dayId, int lessonId)
+    bool IsEducatorConstraint(int dayId, int lessonId)
     {
-        return classroomConstraints.Any(cr => cr.DayId == dayId && cr.LessonId == lessonId);
+        if (ViewData["SelectedEducatorId"] == null) return false;
+        int educatorId = (int)ViewData["SelectedEducatorId"];
+        return educatorConstraints.Any(ec => 
+            ec.DayId == dayId && 
+            ec.LessonId == lessonId && 
+            ec.EducatorId == educatorId);
     }
 }
 
@@ -120,9 +112,8 @@
                         @if (HasConstraint(daysList[j].DayId, lessonsList[i].LessonId))
                         {
                             var bgColor = IsSelectedCourseConstraint(daysList[j].DayId, lessonsList[i].LessonId) ? "#4CAF50" : 
-                                        IsEducatorConstraint(daysList[j].DayId, lessonsList[i].LessonId) ? "#FFA500" :
                                         IsClassConstraint(daysList[j].DayId, lessonsList[i].LessonId) ? "#FF6B6B" :
-                                        IsClassroomConstraint(daysList[j].DayId, lessonsList[i].LessonId) ? "#9C27B0" : "#ADD8E6";
+                                        IsEducatorConstraint(daysList[j].DayId, lessonsList[i].LessonId) ? "#FFA500" : "#ADD8E6";
                             <td style="width: calc((100% - 8%) / @daysList.Count); height: 70px; background-color: @bgColor; cursor: pointer; text-align: center; vertical-align: middle;"
                                 ondblclick="RemoveConstraint(event, @daysList[j].DayId, @lessonsList[i].LessonId)">
                                 @GetConstraintInfo(daysList[j].DayId, lessonsList[i].LessonId)

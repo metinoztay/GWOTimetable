@@ -142,7 +142,40 @@
 
 
     </div>
+</div>
 
+<div class="row mt-4">
+    <div class="col-md-9">
+        <div class="card card-gray card-outline schedule-card">
+            <div class="card-header d-flex align-items-center">
+                <h3 class="card-title"><i class="fas fa-calendar-days"></i>&nbsp; Schedule</h3>
+                <div class="ml-auto">
+                    <button type="button" class="btn btn-outline-secondary btn-sm ml-1" onclick="ClearConstraints()">
+                        <i class="fa-solid fa-eraser"></i>&nbsp; Clear
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0 table-responsive" id="constraintTableBody">
+                @await Html.PartialAsync("~/Views/Constraint/_ConstraintsClass.cshtml", Model)
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-gray card-outline options-card">
+            <div class="card-header d-flex align-items-center">
+                <h3 class="card-title pt-1 pb-1"><i class="fas fa-calendar-days"></i>&nbsp; Options</h3>
+            </div>
+            <div class="card-body">
+                @foreach (var c in classModel.ClassCourses)
+                {
+                    <button type="button" class="btn btn-outline-primary btn-block constraint-option-button" data-classcourse-id="@c.ClassCourseId">(@c.Course.CourseCode) - @c.Classroom.ClassroomName<br>@c.Course.CourseName</button>
+                }
+                <button type="button" class="btn btn-outline-danger btn-block pt-3 pb-3 constraint-option-button" data-classcourse-id="0">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <div class="modal fade" id="addCourseModal" tabindex="-1">
         <div class="modal-dialog">
@@ -288,9 +321,7 @@
                     <h5 class="modal-title" id="deleteClassModalLabel"><i class="fas fa-exclamation-circle"></i>&nbsp;
                         Delete
                         Confirmation</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
                     <dt>Are you sure you want to delete this class?</dt>
@@ -323,9 +354,7 @@
                     <h5 class="modal-title" id="deleteCourseModalLabel"><i class="fas fa-exclamation-circle"></i>&nbsp;
                         Delete
                         Confirmation</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
                     <dt>Are you sure you want to delete this course?</dt>
@@ -634,5 +663,153 @@
                 });
             });
 
+        </script>
+
+        <script>
+            var selectedConstraintButton;
+
+            function AddConstraint(event, dayId, lessonId) {
+                event.preventDefault();
+                const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+
+                var classData = {
+                    ClassId: @classModel.ClassId,
+                    ClassCourseId: classCourseId,
+                    DayId: dayId,
+                    LessonId: lessonId
+                };
+
+                $.ajax({
+                    url: '@Url.Action("AddConstraintForClass", "Constraint")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(classData),
+                    success: function (response) {
+                        if (response.success) {
+                            RefreshConstraints();
+                            toastr.success('Constraint added successfully.');
+                        } else {
+                            toastr.error(response.message);
+                        }
+                    },
+                    error: function () {
+                        toastr.error('An error occurred while adding the constraint.');
+                    }
+                });
+            }
+
+            function RemoveConstraint(event, dayId, lessonId) {
+                event.preventDefault();
+                const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+
+                var classData = {
+                    ClassId: @classModel.ClassId,
+                    ClassCourseId: classCourseId,
+                    DayId: dayId,
+                    LessonId: lessonId
+                };
+
+                $.ajax({
+                    url: '@Url.Action("RemoveConstraintForClass", "Constraint")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(classData),
+                    success: function (response) {
+                        if (response.success) {
+                            RefreshConstraints();
+                            toastr.success('Constraint removed successfully.');
+                        } else {
+                            toastr.error(response.message);
+                        }
+                    },
+                    error: function () {
+                        toastr.error('An error occurred while removing the constraint.');
+                    }
+                });
+            }
+
+            function RefreshConstraints() {
+                $('#constraintTableBody').children('table').first().hide();
+                $('#constraintTableBody').append('<div style="display: flex; align-items: center; justify-content: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.5); z-index: 1;"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
+
+                const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+                
+                var classData = {
+                    ClassId: @classModel.ClassId,
+                    ClassCourseId: classCourseId,
+                    DayId: 0,
+                    LessonId: 0
+                };
+
+                $.ajax({
+                    url: '@Url.Action("GetConstraintsForClass", "Constraint")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(classData),
+                    success: function (response) {
+                        $('#constraintTableBody').html(response);
+                    },
+                    error: function (xhr, status, error) {
+                        var errorMessage = "An unknown error occurred. Please try again.";
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        toastr.error(errorMessage);
+                    }
+                });
+            }
+
+            function ClearConstraints() {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "All constraints will be removed. This action cannot be undone!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, clear all!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("ClearConstraints", "Constraint")',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ ClassId: @classModel.ClassId }),
+                            success: function (response) {
+                                if (response.success) {
+                                    toastr.success('All constraints cleared successfully.');
+                                    location.reload();
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function () {
+                                toastr.error('An error occurred while clearing constraints.');
+                            }
+                        });
+                    }
+                });
+            }
+
+            $(document).ready(function () {
+                $('.constraint-option-button').on('click', function () {
+                    if (selectedConstraintButton) {
+                        if (selectedConstraintButton.text().includes("Close")) {
+                            selectedConstraintButton.removeClass('text-white');
+                        }
+                        selectedConstraintButton.removeClass('btn-primary btn-danger').addClass('btn-outline-primary');
+                    }
+
+                    selectedConstraintButton = $(this);
+
+                    if (selectedConstraintButton.text().includes("Close")) {
+                        selectedConstraintButton.removeClass('btn-outline-primary').addClass('btn-danger text-white');
+                    } else {
+                        selectedConstraintButton.removeClass('btn-outline-primary').addClass('btn-primary');
+                    }
+
+                    RefreshConstraints();
+                });
+            });
         </script>
 }

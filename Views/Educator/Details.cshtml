@@ -747,10 +747,93 @@
     <script>
         var selectedConstraintButton;
 
+        function RefreshConstraints() {
+            $('#constraintTableBody').children('table').first().hide();
+            $('#constraintTableBody').append('<div style="display: flex; align-items: center; justify-content: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.5); z-index: 1;"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
+
+            const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+            
+            var educatorData = {
+                EducatorId: @educatorModel.EducatorId,
+                ClassCourseId: classCourseId
+            };
+
+            $.ajax({
+                url: '@Url.Action("GetConstraintsForEducator", "Constraint")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(educatorData),
+                success: function (response) {
+                    $('#constraintTableBody').html(response);
+                },
+                error: function () {
+                    toastr.error('An error occurred while refreshing constraints.');
+                }
+            });
+        }
+
+        function AddConstraint(event, dayId, lessonId) {
+            event.preventDefault();
+            const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+
+            var educatorData = {
+                EducatorId: @educatorModel.EducatorId,
+                ClassCourseId: classCourseId,
+                DayId: dayId,
+                LessonId: lessonId
+            };
+
+            $.ajax({
+                url: '@Url.Action("AddConstraintForEducator", "Constraint")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(educatorData),
+                success: function (response) {
+                    if (response.success) {
+                        RefreshConstraints();
+                        toastr.success('Constraint added successfully.');
+                    } else {
+                        toastr.error(response.message);
+                    }
+                },
+                error: function () {
+                    toastr.error('An error occurred while adding the constraint.');
+                }
+            });
+        }
+
+        function RemoveConstraint(event, dayId, lessonId) {
+            event.preventDefault();
+            const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+
+            var educatorData = {
+                EducatorId: @educatorModel.EducatorId,
+                ClassCourseId: classCourseId,
+                DayId: dayId,
+                LessonId: lessonId
+            };
+
+            $.ajax({
+                url: '@Url.Action("RemoveConstraintForEducator", "Constraint")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(educatorData),
+                success: function (response) {
+                    if (response.success) {
+                        RefreshConstraints();
+                        toastr.success('Constraint removed successfully.');
+                    } else {
+                        toastr.error(response.message);
+                    }
+                },
+                error: function () {
+                    toastr.error('An error occurred while removing the constraint.');
+                }
+            });
+        }
+
         $(document).ready(function () {
             $('.constraint-option-button').on('click', function () {
-                $('#constraintTableBody').children('table').first().hide();
-                $('#constraintTableBody').append('<div style="display: flex; align-items: center; justify-content: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.5); z-index: 1;"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
                 if (selectedConstraintButton) {
                     if (selectedConstraintButton.text().includes("Close")) {
                         selectedConstraintButton.removeClass('text-white');
@@ -766,115 +849,9 @@
                     selectedConstraintButton.removeClass('btn-outline-primary').addClass('btn-primary');
                 }
 
-                const classcourseId = parseInt($(this).data('classcourse-id'));
-                
-                
-                    var classCourse = {
-                        ClassCourseId: classcourseId,
-                        EducatorId: @educatorModel.EducatorId,
-                    };
-
-                    $.ajax({
-                        url: '@Url.Action("GetConstraintsForEducator", "Constraint")',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify(classCourse),
-                        success: function (response) {
-                            $('#constraintTableBody').html(response);
-                        },
-                        error: function (xhr, status, error) {
-                            var errorMessage = "An unknown error occurred. Please try again.";
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            }
-                            Swal.fire({
-                                toast: true,
-                                icon: 'error',
-                                title: errorMessage,
-                                position: 'top',
-                                showConfirmButton: false,
-                                timer: 3000
-                            });
-                        }
-                    });
-                
+                RefreshConstraints();
             });
-           
         });
-    </script>
-
-    
-
-    <script>
-        function AddConstraint(event, dayId, lessonId) {
-            const classCourseId = parseInt(selectedConstraintButton.data('classcourse-id'));
-            var timetableConst = {
-                DayId: parseInt(dayId),
-                LessonId: parseInt(lessonId),
-                ClassCourseId: classCourseId,
-                EducatorId: @educatorModel.EducatorId,
-            };
-
-             $.ajax({
-                        url: '@Url.Action("AddConstraintForEducator", "Constraint")',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify(timetableConst),
-                        success: function (response) {
-                            selectedConstraintButton.click();
-                        },
-                        error: function (xhr, status, error) {
-                            var errorMessage = "An unknown error occurred. Please try again.";
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            }
-                            Swal.fire({
-                                toast: true,
-                                icon: 'error',
-                                title: errorMessage,
-                                position: 'top',
-                                showConfirmButton: false,
-                                timer: 3000
-                            });
-                        }
-                    });
-        }
-    </script>
-    <script>
-        function RemoveConstraint(event, dayId, lessonId) {
-        
-            const classCourseId = parseInt(selectedConstraintButton.data('classcourse-id'));
-            var timetableConst = {
-                DayId: parseInt(dayId),
-                LessonId: parseInt(lessonId),
-                ClassCourseId: classCourseId,
-                EducatorId: @educatorModel.EducatorId,
-            };
-
-             $.ajax({
-                        url: '@Url.Action("RemoveConstraintForEducator", "Constraint")',
-                        type: 'DELETE',
-                        contentType: 'application/json',
-                        data: JSON.stringify(timetableConst),
-                        success: function (response) {
-                            selectedConstraintButton.click();
-                        },
-                        error: function (xhr, status, error) {
-                            var errorMessage = "An unknown error occurred. Please try again.";
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            }
-                            Swal.fire({
-                                toast: true,
-                                icon: 'error',
-                                title: errorMessage,
-                                position: 'top',
-                                showConfirmButton: false,
-                                timer: 3000
-                            });
-                        }
-                    });
-        }        
     </script>
     <script>
         function ClearConstraints(event, dayId, lessonId) {         
@@ -910,4 +887,3 @@
     
 
 }
-
