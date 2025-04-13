@@ -210,16 +210,6 @@
 <div class="row">
     <div class="col-md-9">
         <div class="card card-gray card-outline mt-3">
-            <div class="card-header d-flex align-items-center">
-                <h3 class="card-title"><i class="fas fa-calendar-days"></i>&nbsp; Schedule</h3>
-            <div class="ml-auto">
-                <button type="button" class="btn btn-outline-secondary btn-sm ml-1" onclick="ClearConstraints()">
-                    <i class="fa-solid fa-eraser"></i>&nbsp; Clear
-                </button>
-               
-                
-                </div>
-            </div>
             <div class="card-body p-0 table-responsive" id="constraintTableBody">
                 <table class="table table-bordered">
 
@@ -467,6 +457,9 @@
 @section Scripts {
 
     <script>
+        // Global değişken olarak current educator ID'sini tanımla
+        const currentEducatorId = @educatorModel.EducatorId;
+        
         $(document).ready(function () {
             $('.delete-educator-button').on('click', function () {
                 const educatorId = $(this).data('educator-id');
