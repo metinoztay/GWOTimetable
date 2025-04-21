@@ -110,7 +110,7 @@
             <i class="fas fa-exclamation-triangle"></i>&nbsp; You have unsaved changes
         </span>
         <div class="ml-auto">
-            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="ClearConstraints()">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllConstraints()">
                 <i class="fa-solid fa-eraser"></i>&nbsp; Clear
             </button>
             <button type="button" id="saveConstraintsButton" class="btn btn-outline-success btn-sm" onclick="saveAllChanges()">
@@ -217,6 +217,20 @@
             window.selectedConstraintButton = null;
             console.log("Created empty selectedConstraintButton");
         }
+        
+        // Olay dinleyicileri
+        $(document).ready(function() {
+            // Butonlara olay dinleyicileri ekle (yedek olarak, HTML onclick özniteliğinin yanı sıra)
+            $('#saveConstraintsButton').on('click', function() {
+                console.log("Save button clicked");
+                saveAllChanges();
+            });
+            
+            $('#cancelChangesButton').on('click', function() {
+                console.log("Cancel button clicked");
+                cancelChanges();
+            });
+        });
     });
 
     // Course ID'den course adını bulmak için yardımcı fonksiyon
@@ -606,20 +620,87 @@
         }
     }
 
-    // Olay dinleyicileri
-    $(document).ready(function() {
-        // Butonlara olay dinleyicileri ekle (yedek olarak, HTML onclick özniteliğinin yanı sıra)
-        $('#saveConstraintsButton').on('click', function() {
-            console.log("Save button clicked");
-            saveAllChanges();
+    // Tüm constraint'leri temizle
+    function clearAllConstraints() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This will delete all constraints for this educator. This action cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, clear all!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const educatorId = classCoursesData.length > 0 ? classCoursesData[0].EducatorId : 0;
+                
+                // Show loading spinner
+                Swal.fire({
+                    title: 'Clearing constraints...',
+                    html: '<i class="fas fa-spinner fa-spin fa-2x"></i>',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false
+                });
+                
+                $.ajax({
+                    url: '/Constraint/ClearAllEducatorConstraints',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(educatorId),
+                    success: function(response) {
+                        if (response.success) {
+                            // Refresh the view
+                            const classCourse = {
+                                ClassCourseId: 0,
+                                EducatorId: educatorId
+                            };
+                            
+                            $.ajax({
+                                url: '/Constraint/GetConstraintsForEducator',
+                                type: 'POST',
+                                contentType: 'application/json',
+                                data: JSON.stringify(classCourse),
+                                success: function(response) {
+                                    $('#constraintTableBody').html(response);
+                                    Swal.fire({
+                                        title: 'Cleared!',
+                                        text: 'All constraints have been cleared successfully.',
+                                        icon: 'success',
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                    hasUnsavedChanges = false;
+                                    $('#constraintChangeAlert').hide();
+                                },
+                                error: function() {
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: 'Failed to refresh the view',
+                                        icon: 'error'
+                                    });
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: response.message || 'Failed to clear constraints',
+                                icon: 'error'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: xhr.responseJSON?.message || 'Failed to clear constraints',
+                            icon: 'error'
+                        });
+                    }
+                });
+            }
         });
-        
-        $('#cancelChangesButton').on('click', function() {
-            console.log("Cancel button clicked");
-            cancelChanges();
-        });
-    });
-    
+    }
+
     // Close butonu için ClearConstraints fonksiyonu
     function ClearConstraints() {
         Swal.fire({

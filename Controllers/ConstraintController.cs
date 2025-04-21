@@ -398,30 +398,39 @@ namespace GWOTimetable.Controllers
             }
         }
 
-        [HttpDelete]
-        public async Task<IActionResult> ClearConstraintsForEducator([FromBody] ConstraintDTO constraint)
+
+        [HttpPost]
+        public async Task<IActionResult> ClearAllEducatorConstraints([FromBody] int educatorId)
         {
-            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-
-            var educatorConstraints = _context.EducatorConstraints.Where(ec => ec.EducatorId == constraint.EducatorId && ec.WorkspaceId == selectedWorkspaceId).ToList();
-            foreach (var ec in educatorConstraints)
+            try
             {
-                _context.EducatorConstraints.Remove(ec);
-            }
-            await _context.SaveChangesAsync();
+                Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
 
-            var ClassCourses = _context.ClassCourses.Where(cc => cc.EducatorId == constraint.EducatorId && cc.WorkspaceId == selectedWorkspaceId).ToList();
-            foreach (var cc in ClassCourses)
+                // Delete all educator constraints
+                var educatorConstraints = await _context.EducatorConstraints
+                    .Where(ec => ec.EducatorId == educatorId && ec.WorkspaceId == selectedWorkspaceId)
+                    .ToListAsync();
+                _context.EducatorConstraints.RemoveRange(educatorConstraints);
+                await _context.SaveChangesAsync();
+
+                // Delete all timetable constraints for this educator's courses
+                var classCourses = await _context.ClassCourses
+                    .Where(cc => cc.EducatorId == educatorId)
+                    .Select(cc => cc.ClassCourseId)
+                    .ToListAsync();
+
+                var timetableConstraints = await _context.TimetableConstraints
+                    .Where(tc => classCourses.Contains(tc.ClassCourseId) && tc.WorkspaceId == selectedWorkspaceId)
+                    .ToListAsync();
+                _context.TimetableConstraints.RemoveRange(timetableConstraints);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "All constraints cleared successfully" });
+            }
+            catch (Exception ex)
             {
-                var timetableConstraints = _context.TimetableConstraints.Where(tc => tc.ClassCourseId == cc.ClassCourseId).ToList();
-                foreach (var tc in timetableConstraints)
-                {
-                    _context.TimetableConstraints.Remove(tc);
-                }
+                return BadRequest(new { success = false, message = "Failed to clear constraints: " + ex.Message });
             }
-            await _context.SaveChangesAsync();
-
-            return Ok();
         }
     }
 }
