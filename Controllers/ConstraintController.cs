@@ -59,6 +59,69 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> GetConstraintsForClass([FromBody] ClassCourse classCourse)
+        {
+            try
+            {
+                if (classCourse == null || classCourse.ClassId == 0)
+                {
+                    return BadRequest("Invalid class data");
+                }
+
+                Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+                Workspace workspace = new Workspace();
+                if (classCourse.ClassCourseId == 0)
+                {
+                    workspace = await _context.Workspaces
+                    .Include(w => w.Days)
+                    .Include(w => w.Lessons)
+                    .Include(w => w.ClassConstraints.Where(c => c.ClassId == classCourse.ClassId))
+                    .Include(w => w.ClassCourses.Where(c => c.ClassId == classCourse.ClassId))
+                        .ThenInclude(c => c.TimetableConstraints)
+                    .Include(w => w.ClassCourses)
+                        .ThenInclude(c => c.Course)
+                    .Include(w => w.Courses)
+                    .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);
+                }
+                else
+                {
+                    var existingClassCourse = await _context.ClassCourses
+                        .FirstOrDefaultAsync(cc => cc.ClassCourseId == classCourse.ClassCourseId);
+
+                    if (existingClassCourse == null)
+                    {
+                        return NotFound("Class course not found");
+                    }
+
+                    workspace = await _context.Workspaces
+                    .Include(w => w.Days)
+                    .Include(w => w.Lessons)
+                    .Include(w => w.ClassConstraints.Where(c => c.ClassId == existingClassCourse.ClassId))
+                    .Include(w => w.ClassCourses.Where(c => c.ClassId == existingClassCourse.ClassId))
+                        .ThenInclude(c => c.TimetableConstraints)
+                    .Include(w => w.ClassCourses)
+                        .ThenInclude(c => c.Course)
+                    .Include(w => w.Courses)
+                    .Include(w => w.ClassroomConstraints.Where(cr => cr.ClassroomId == existingClassCourse.ClassroomId))
+                    .Include(w => w.EducatorConstraints.Where(e => e.EducatorId == existingClassCourse.EducatorId))
+                    .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);
+                }
+
+                if (workspace == null)
+                {
+                    return NotFound("Workspace not found");
+                }
+
+                return PartialView("_ConstraintsClass", workspace);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while loading constraints", error = ex.Message });
+            }
+        }
+
+        [HttpPost]
         public async Task<IActionResult> AddConstraintForEducator([FromBody] ConstraintDTO constraint)
         {
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
@@ -431,6 +494,89 @@ namespace GWOTimetable.Controllers
             {
                 return BadRequest(new { success = false, message = "Failed to clear constraints: " + ex.Message });
             }
+        }
+
+        
+        [HttpPost]
+        public async Task<IActionResult> AddConstraintForClass([FromBody] ConstraintDTO constraint)
+        {
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+            // Check for existing constraints at the same day and lesson
+            var existingClassConstraint = await _context.ClassConstraints
+                .FirstOrDefaultAsync(cc => 
+                    cc.WorkspaceId == selectedWorkspaceId &&
+                    cc.ClassId == constraint.ClassId &&
+                    cc.DayId == constraint.DayId &&
+                    cc.LessonId == constraint.LessonId);
+
+            var existingTimetableConstraint = await _context.TimetableConstraints
+                .FirstOrDefaultAsync(tc =>
+                    tc.WorkspaceId == selectedWorkspaceId &&
+                    tc.DayId == constraint.DayId &&
+                    tc.LessonId == constraint.LessonId);
+
+            // If any constraint already exists at this slot, return an error
+            if (existingClassConstraint != null || existingTimetableConstraint != null)
+            {
+                return BadRequest(new { message = $"Timetable constraint already exists at Day:{constraint.DayId}, Lesson:{constraint.LessonId}" });
+            }
+
+            if (constraint.ClassCourseId == 0)
+            {
+                ClassConstraint classConstraint = new ClassConstraint();
+                classConstraint.WorkspaceId = selectedWorkspaceId;
+                classConstraint.ClassId = constraint.ClassId;
+                classConstraint.DayId = constraint.DayId;
+                classConstraint.LessonId = constraint.LessonId;
+                classConstraint.IsPlaceable = false;
+                _context.ClassConstraints.Add(classConstraint);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                TimetableConstraint tc = new TimetableConstraint();
+                tc.WorkspaceId = selectedWorkspaceId;
+                tc.DayId = constraint.DayId;
+                tc.LessonId = constraint.LessonId;
+                tc.ClassCourseId = constraint.ClassCourseId;
+                _context.TimetableConstraints.Add(tc);
+                await _context.SaveChangesAsync();
+            }
+            return Ok(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RemoveConstraintForClass([FromBody] ConstraintDTO constraint)
+        {
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+            ClassConstraint classConstraint = await _context.ClassConstraints
+                .FirstOrDefaultAsync(cc => 
+                    cc.WorkspaceId == selectedWorkspaceId &&
+                    cc.ClassId == constraint.ClassId && 
+                    cc.DayId == constraint.DayId && 
+                    cc.LessonId == constraint.LessonId);
+
+            if (classConstraint != null)
+            {
+                _context.ClassConstraints.Remove(classConstraint);
+                await _context.SaveChangesAsync();
+            }
+
+            TimetableConstraint timetableConstraint = await _context.TimetableConstraints
+                .FirstOrDefaultAsync(tc => 
+                    tc.WorkspaceId == selectedWorkspaceId &&
+                    tc.DayId == constraint.DayId && 
+                    tc.LessonId == constraint.LessonId);
+
+            if (timetableConstraint != null)
+            {
+                _context.TimetableConstraints.Remove(timetableConstraint);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { success = true });
         }
     }
 }
