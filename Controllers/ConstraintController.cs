@@ -63,6 +63,26 @@ namespace GWOTimetable.Controllers
         {
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
 
+            // Check for existing constraints at the same day and lesson
+            var existingEducatorConstraint = await _context.EducatorConstraints
+                .FirstOrDefaultAsync(ec => 
+                    ec.WorkspaceId == selectedWorkspaceId &&
+                    ec.EducatorId == constraint.EducatorId &&
+                    ec.DayId == constraint.DayId &&
+                    ec.LessonId == constraint.LessonId);
+
+            var existingTimetableConstraint = await _context.TimetableConstraints
+                .FirstOrDefaultAsync(tc =>
+                    tc.WorkspaceId == selectedWorkspaceId &&
+                    tc.DayId == constraint.DayId &&
+                    tc.LessonId == constraint.LessonId);
+
+            // If any constraint already exists at this slot, return an error
+            if (existingEducatorConstraint != null || existingTimetableConstraint != null)
+            {
+                return BadRequest(new { message = $"Timetable constraint already exists at Day:{constraint.DayId}, Lesson:{constraint.LessonId}" });
+            }
+
             if (constraint.ClassCourseId == 0)
             {
                 EducatorConstraint educatorConstraint = new EducatorConstraint();
