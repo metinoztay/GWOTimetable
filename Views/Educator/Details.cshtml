@@ -7,20 +7,6 @@
     Educator educatorModel = Model.Educators.First();
     List<Day> days = Model.Days.ToList();
     List<Lesson> lessons = Model.Lessons.ToList();
-    int maxLessonCount = 0;
-    foreach (var day in Model.Days)
-    {
-        if (day.LessonCount > maxLessonCount)
-            maxLessonCount = day.LessonCount;
-    }
-
-    string FindConstraint(int dayId,int lessonId)
-    {
-        Day day = days[dayId];    
-        Lesson lesson = lessons[lessonId];        
-
-        return string.Concat(day.DayOfWeek.ToString()," ",lesson.LessonNumber.ToString());
-    }
 }
 
 @using GWOTimetable.Models;
@@ -211,47 +197,10 @@
     <div class="col-md-9">
         <div class="card card-gray card-outline mt-3">
             <div class="card-body p-0 table-responsive" id="constraintTableBody">
-                <table class="table table-bordered">
-
-                    <tr>
-                        <td style="width: 8%; text-align: center; vertical-align: middle;"></td>
-                        @foreach (var day in days)
-                        {
-                            if (day.LessonCount > 0)
-                            {
-                                <td style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">@day.DayOfWeek</td>
-                            }
-
-                        }
-                    </tr>
-
-                    @for (int i = 0; i < maxLessonCount; i++)
-                    {
-                        <tr>
-                            <td style="width: 8%; text-align: center; vertical-align: middle;">
-                                @(lessons[i].StartTime)-@(lessons[i].EndTime)</td>
-
-                            @for (int j = 0; j < Model.Days.Count(); j++)
-                            {
-                                if (days[j].LessonCount > 0)
-                                {
-                                    if (i < days[j].LessonCount)
-                                    {
-                                        <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; cursor: pointer; text-align: center; vertical-align: middle;"
-                                            onclick="GetConstraintOptions(event, @i, @j)" onmouseover="this.style.background='#f5f5f5'"
-                                            onmouseout="this.style.background='white'">
-                                            @FindConstraint(j, i)
-                                        </td>
-                                    }
-                                    else
-                                    {
-                                        <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ccc; opacity: 0.5; pointer-events: none;"></td>
-                                    }
-                                }
-                            }
-                        </tr>
-                    }
-                </table>
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-days fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Please select a constraint to view the timetable</h5>
+                </div>
             </div>
         </div>
     </div>
