@@ -711,6 +711,452 @@
             const currentClassId = @classModel.ClassId;
             var selectedConstraintButton;
 
+            // Kısıtlama fonksiyonları - partial view'dan bağımsız olarak ana sayfada tanımlı olması gerekiyor
+            var constraintsToAdd = [];
+            var constraintsToRemove = [];
+            var hasUnsavedChanges = false;
+            
+            // Partial view yüklendikten sonra çağrılacak, kısıtlama tablosunu başlatır
+            function initializeConstraintTable() {
+                console.log("Constraint table initialized");
+                
+                // Varsayılan olarak Close constraint tipi seçili
+                if (!selectedConstraintButton) {
+                    selectedConstraintButton = { data: function() { return { type: 'closed' }; } };
+                }
+            }
+            
+            // Yerel olarak constraint ekleme
+            function AddConstraintLocal(element, dayId, lessonId) {
+                console.log("AddConstraintLocal called for day:", dayId, "lesson:", lessonId);
+                
+                // Seçili kısıtlama tipine göre ClassCourseId değerini belirle
+                const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+                const constraintType = selectedConstraintButton ? selectedConstraintButton.data('type') : 'closed';
+                console.log("Seçili kısıtlama tipi:", constraintType, "ClassCourseId:", classCourseId);
+                
+                // Kısıtlama nesnesini oluştur
+                const constraint = {
+                    DayId: dayId,
+                    LessonId: lessonId,
+                    ClassId: currentClassId, 
+                    ClassCourseId: classCourseId // Artık seçili butona göre değişiyor
+                };
+                
+                console.log("Kısıtlama ekleniyor:", constraint);
+
+                // Bu kısıtlamanın tam olarak silinmek için işaretlenip işaretlenmediğini kontrol et
+                const removeIndex = constraintsToRemove.findIndex(item => 
+                    item.DayId === dayId && item.LessonId === lessonId && item.ClassId === currentClassId
+                );
+
+                if (removeIndex > -1) {
+                    // Silme için işaretlendiyse, işaretlemeyi kaldır
+                    constraintsToRemove.splice(removeIndex, 1);
+                    console.log("Silme işareti kaldırıldı");
+                    
+                    // Daha önce kaydedilmişse orijinal durumunu geri getir
+                    const wasUnsaved = $(element).attr('data-was-unsaved') === 'true';
+                    if (!wasUnsaved) {
+                        // Kaydedilmiş bir kısıtlamaydı, görünümünü geri yükle
+                        if (classCourseId === 0) {
+                            // Kapalı (Closed) kısıtlama
+                            $(element).css('background-color', '#ffe6e6');
+                            $(element).text('Closed');
+                        } else {
+                            // Ders kısıtlaması
+                            $(element).css('background-color', '#ADD8E6'); // Açık mavi
+                            $(element).text(selectedConstraintButton.text());
+                        }
+                        $(element).attr('ondblclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
+                        $(element).removeAttr('onclick onmouseover onmouseout data-was-unsaved data-removed-constraint');
+                        $(element).attr('data-constraint-data', JSON.stringify(constraint)); // Kısıtlama verilerini geri yükle
+                    } else {
+                        // Hiç kaydedilmemiş, boş hücre durumuna geri döndür (burada nadiren gerçekleşir)
+                        $(element).css('background-color', 'white').text('');
+                        $(element).attr('onclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
+                        $(element).attr('onmouseover', "this.style.background='#f5f5f5'");
+                        $(element).attr('onmouseout', "this.style.background='white'");
+                        $(element).removeAttr('ondblclick data-constraint-data data-was-unsaved data-removed-constraint');
+                    }
+                    $(element).removeAttr('data-unsaved');
+                } else {
+                    // constraintsToAdd listesinde zaten yoksa ekle
+                    const existsInAdd = constraintsToAdd.some(item => 
+                        item.DayId === dayId && item.LessonId === lessonId && item.ClassId === currentClassId
+                    );
+                    if (!existsInAdd) {
+                        constraintsToAdd.push(constraint);
+                        console.log("constraintsToAdd listesine kısıtlama eklendi");
+                    }
+                    
+                    // Kaydedilmemiş kısıtlama için UI'yı güncelle
+                    if (classCourseId === 0) {
+                        // Kaydedilmemiş kapalı kısıtlama
+                        $(element).css('background-color', '#FFD700'); // Altın sarısı renk
+                        $(element).text('Closed');
+                    } else {
+                        // Kaydedilmemiş ders kısıtlaması
+                        $(element).css('background-color', '#6FC276'); // Açık yeşil
+                        $(element).text(selectedConstraintButton.text());
+                    }
+                    
+                    $(element).attr('data-unsaved', 'true');
+                    $(element).attr('ondblclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
+                    $(element).removeAttr('onclick onmouseover onmouseout');
+                    $(element).attr('data-constraint-data', JSON.stringify(constraint));
+                    $(element).removeAttr('data-removed-constraint');
+                }
+
+                showUnsavedChanges();
+            }
+            
+            // Yerel olarak constraint kaldırma
+            function RemoveConstraintLocal(element, dayId, lessonId) {
+                console.log("RemoveConstraintLocal called for day:", dayId, "lesson:", lessonId);
+                
+                var constraintData = {};
+                try {
+                    // Yerel olarak eklenen sınıf kısıtlamalarının başlangıçta tam verileri olmayabilir
+                    constraintData = JSON.parse($(element).attr('data-constraint-data') || '{}');
+                    constraintData.DayId = dayId;
+                    constraintData.LessonId = lessonId;
+                    constraintData.ClassId = currentClassId; // ClassId'nin ayarlandığından emin ol
+                } catch (error) {
+                    console.error("Kısıtlama verisi ayrıştırılırken hata:", error);
+                    constraintData = {
+                        DayId: dayId,
+                        LessonId: lessonId,
+                        ClassId: currentClassId,
+                        ClassCourseId: 0 
+                    };
+                }
+
+                console.log("Kısıtlama kaldırılıyor:", constraintData);
+                
+                const isUnsaved = $(element).attr('data-unsaved') === 'true';
+                console.log("Kısıtlama kaydedilmemiş:", isUnsaved);
+                
+                if (isUnsaved) {
+                    // Kaydedilmemiş bir kısıtlamayı kaldırma
+                    constraintsToAdd = constraintsToAdd.filter(item => 
+                        !(item.DayId === dayId && item.LessonId === lessonId && item.ClassId === currentClassId)
+                    );
+                    console.log("constraintsToAdd listesinden kaydedilmemiş kısıtlama kaldırıldı");
+                } else {
+                    // Kaydedilmiş bir kısıtlamayı kaldırma - zaten yoksa silme listesine ekle
+                    const existsInRemove = constraintsToRemove.some(item => 
+                        item.DayId === dayId && item.LessonId === lessonId && item.ClassId === currentClassId
+                    );
+                    if (!existsInRemove) {
+                        constraintsToRemove.push(constraintData);
+                        console.log("constraintsToRemove listesine kısıtlama eklendi");
+                    }
+                }
+
+                // Potansiyel iptal için geçici bilgileri sakla
+                $(element).attr('data-removed-constraint', JSON.stringify(constraintData));
+                $(element).attr('data-was-unsaved', isUnsaved ? 'true' : 'false');
+
+                // UI'yı boş hücre olarak güncelle
+                $(element).css('background-color', 'white').text('');
+                $(element).attr('onclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
+                $(element).attr('onmouseover', "this.style.background='#f5f5f5'");
+                $(element).attr('onmouseout', "this.style.background='white'");
+                $(element).removeAttr('ondblclick data-constraint-data data-unsaved');
+                
+                showUnsavedChanges();
+            }
+            
+            // Kaydedilmemiş değişiklikleri gösterme
+            function showUnsavedChanges() {
+                hasUnsavedChanges = constraintsToAdd.length > 0 || constraintsToRemove.length > 0;
+                if (hasUnsavedChanges) {
+                    $('#constraintChangeAlert').show();
+                    $('#saveConstraintsButton').removeClass('btn-outline-success').addClass('btn-success');
+                    $('#cancelChangesButton').removeClass('btn-outline-danger').addClass('btn-danger');
+                } else {
+                    $('#constraintChangeAlert').hide();
+                    $('#saveConstraintsButton').removeClass('btn-success').addClass('btn-outline-success');
+                    $('#cancelChangesButton').removeClass('btn-danger').addClass('btn-outline-danger');
+                }
+            }
+            
+            // Tüm değişiklikleri kaydetme
+            function saveAllChanges() {
+                if (!hasUnsavedChanges) {
+                    return;
+                }
+                
+                // Yükleniyor göstergesini göster
+                $('.spinner-overlay').css('display', 'flex');
+
+                // Daha detaylı hata ayıklama bilgisi ekle
+                console.log("Kaydedilecek ekleme listesi:", JSON.stringify(constraintsToAdd));
+                console.log("Kaydedilecek silme listesi:", JSON.stringify(constraintsToRemove));
+
+                var changes = {
+                    ClassId: currentClassId, 
+                    ConstraintsToAdd: constraintsToAdd,
+                    ConstraintsToRemove: constraintsToRemove
+                };
+
+                console.log("Sınıf değişiklikleri kaydediliyor:", JSON.stringify(changes));
+
+                $.ajax({
+                    url: '/Constraint/SaveAllClassConstraints',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(changes),
+                    success: function(response) {
+                        $('.spinner-overlay').hide();
+                        console.log("Sunucu yanıtı:", response);
+                        
+                        if (response && response.success) {
+                            let swalOptions = {
+                                icon: 'success',
+                                title: 'Başarılı!',
+                                text: response.message || 'Değişiklikler başarıyla kaydedildi.',
+                                confirmButtonText: 'Tamam'
+                            };
+                            
+                            // Kaydedilen değişiklikler için UI'yı güncelle
+                            $('td[data-unsaved="true"]').each(function() {
+                                const $cell = $(this);
+                                const cellData = JSON.parse($cell.attr('data-constraint-data') || '{}');
+                                
+                                // Constraint tipine göre doğru rengi ayarla
+                                if (cellData.ClassCourseId === 0) {
+                                    // Kapalı kısıtlama için
+                                    $cell.css('background-color', '#ffe6e6');
+                                    $cell.text('Closed'); 
+                                } else {
+                                    // Ders kısıtlaması için
+                                    $cell.css('background-color', '#ADD8E6');
+                                    // Ders adını bulmaya çalış
+                                    const courseButton = $(`.constraint-option-button[data-classcourse-id="${cellData.ClassCourseId}"]`);
+                                    if (courseButton.length) {
+                                        $cell.text(courseButton.text());
+                                    } else {
+                                        $cell.text('Course');
+                                    }
+                                }
+                                
+                                $cell.removeAttr('data-unsaved');
+                            });
+                            
+                            // Listelerimizi temizle
+                            constraintsToAdd = [];
+                            constraintsToRemove = [];
+                            
+                            // Bildirim göster
+                            Swal.fire(swalOptions);
+                            
+                            // UI'yı güncelle
+                            showUnsavedChanges();
+                        } else {
+                            // Hata durumu
+                            let errorMessages = '';
+                            if (response && response.errors && response.errors.length > 0) {
+                                errorMessages = '<ul>' + response.errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
+                            }
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Hata',
+                                html: (response && response.message ? response.message : 'Değişiklikler kaydedilirken bir hata oluştu.') + 
+                                    (errorMessages ? '<br>' + errorMessages : ''),
+                                confirmButtonText: 'Tamam'
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('.spinner-overlay').hide();
+                        console.error("AJAX hatası:", status, error);
+                        
+                        // XHR yanıtını ve hata detaylarını yazdır
+                        console.error("XHR yanıtı:", xhr.responseText);
+                        
+                        let errorMessage = "Sunucuyla iletişim kurarken bir hata oluştu.";
+                        
+                        // XHR yanıt içeriğini ayrıştırmaya çalış
+                        try {
+                            const jsonResponse = JSON.parse(xhr.responseText);
+                            if (jsonResponse && jsonResponse.message) {
+                                errorMessage = jsonResponse.message;
+                            }
+                        } catch (e) {
+                            // JSON ayrıştırma hatası, varsayılan mesajı kullan
+                            console.error("JSON ayrıştırma hatası:", e);
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata',
+                            text: errorMessage,
+                            confirmButtonText: 'Tamam'
+                        });
+                    }
+                });
+            }
+            
+            // Değişiklikleri iptal etme
+            function cancelChanges() {
+                if (!hasUnsavedChanges) {
+                    return;
+                }
+                
+                // İptal etmeden önce kullanıcıya sor
+                Swal.fire({
+                    title: 'Değişiklikleri İptal Et?',
+                    text: "Tüm kaydedilmemiş değişiklikler kaybolacak. Devam etmek istiyor musunuz?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Evet, iptal et',
+                    cancelButtonText: 'Hayır'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log("Değişiklikler iptal ediliyor");
+                        
+                        // constraintsToAdd listesindeki tüm hücreler için değişiklikleri geri al
+                        for (const constraint of constraintsToAdd) {
+                            const cell = $(`td[data-day-id="${constraint.DayId}"][data-lesson-id="${constraint.LessonId}"]`);
+                            if (cell.length) {
+                                // Hücreyi orijinal durumuna geri döndür
+                                cell.css('background-color', 'white').text('');
+                                cell.attr('onclick', `AddConstraintLocal(this, ${constraint.DayId}, ${constraint.LessonId})`);
+                                cell.attr('onmouseover', "this.style.background='#f5f5f5'");
+                                cell.attr('onmouseout', "this.style.background='white'");
+                                cell.removeAttr('ondblclick data-constraint-data data-unsaved');
+                            }
+                        }
+                        
+                        // constraintsToRemove listesindeki tüm hücreler için değişiklikleri geri al
+                        for (const constraint of constraintsToRemove) {
+                            const cell = $(`td[data-day-id="${constraint.DayId}"][data-lesson-id="${constraint.LessonId}"]`);
+                            if (cell.length) {
+                                // Kaldırılmış constraint özniteliğini kontrol et
+                                const removedConstraintData = cell.attr('data-removed-constraint');
+                                if (removedConstraintData) {
+                                    const removedConstraint = JSON.parse(removedConstraintData);
+                                    const wasUnsaved = cell.attr('data-was-unsaved') === 'true';
+                                    
+                                    if (!wasUnsaved) {
+                                        // Kaydedilmiş constraint'i geri yükle
+                                        if (removedConstraint.ClassCourseId === 0) {
+                                            // Kapalı kısıtlama
+                                            cell.css('background-color', '#ffe6e6');
+                                            cell.text('Closed');
+                                        } else {
+                                            // Ders kısıtlaması
+                                            cell.css('background-color', '#ADD8E6');
+                                            // Ders adını bulmaya çalış
+                                            const courseButton = $(`.constraint-option-button[data-classcourse-id="${removedConstraint.ClassCourseId}"]`);
+                                            if (courseButton.length) {
+                                                cell.text(courseButton.text());
+                                            } else {
+                                                cell.text('Course');
+                                            }
+                                        }
+                                        cell.attr('ondblclick', `RemoveConstraintLocal(this, ${constraint.DayId}, ${constraint.LessonId})`);
+                                        cell.removeAttr('onclick onmouseover onmouseout');
+                                        cell.attr('data-constraint-data', removedConstraintData);
+                                        cell.removeAttr('data-removed-constraint data-was-unsaved');
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Listeleri sıfırla
+                        constraintsToAdd = [];
+                        constraintsToRemove = [];
+                        showUnsavedChanges();
+                        
+                        // Kullanıcıya bildir
+                        Swal.fire(
+                            'İptal edildi!',
+                            'Değişiklikler iptal edildi.',
+                            'success'
+                        );
+                    }
+                });
+            }
+
+            // Tüm kısıtlamaları temizleme
+            function clearAllConstraints() {
+                Swal.fire({
+                    title: 'Tüm Sınıf Kısıtlamalarını Temizle?',
+                    text: "Bu, bu sınıf için tüm 'Kapalı' kısıtlamalarını silecektir. Bu işlem geri alınamaz!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Evet, temizle',
+                    cancelButtonText: 'İptal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('.spinner-overlay').css('display', 'flex');
+                        
+                        $.ajax({
+                            url: '/Constraint/ClearAllClassConstraints',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ ClassId: currentClassId }),
+                            success: function(response) {
+                                $('.spinner-overlay').hide();
+                                
+                                if (response && response.success) {
+                                    // Başarılı ise, tüm kısıtlamaları görsel olarak temizle
+                                    $('td[data-constraint-data]').each(function() {
+                                        const dayId = $(this).attr('data-day-id');
+                                        const lessonId = $(this).attr('data-lesson-id');
+                                        
+                                        $(this).css('background-color', 'white').text('');
+                                        $(this).attr('onclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
+                                        $(this).attr('onmouseover', "this.style.background='#f5f5f5'");
+                                        $(this).attr('onmouseout', "this.style.background='white'");
+                                        $(this).removeAttr('ondblclick data-constraint-data data-unsaved');
+                                    });
+                                    
+                                    // Tüm yerel değişiklik listelerini sıfırla
+                                    constraintsToAdd = [];
+                                    constraintsToRemove = [];
+                                    showUnsavedChanges();
+                                    
+                                    // Kullanıcıya başarılı mesajı göster
+                                    Swal.fire(
+                                        'Temizlendi!',
+                                        response.message || 'Tüm sınıf kısıtlamaları başarıyla temizlendi.',
+                                        'success'
+                                    );
+                                } else {
+                                    // Hata durumu
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Hata',
+                                        text: response && response.message ? response.message : 'Kısıtlamaları temizlerken bir hata oluştu.',
+                                        confirmButtonText: 'Tamam'
+                                    });
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                $('.spinner-overlay').hide();
+                                console.error("AJAX hatası:", status, error);
+                                
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Hata',
+                                    text: 'Sunucuyla iletişim kurarken bir hata oluştu.',
+                                    confirmButtonText: 'Tamam'
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+
             function RefreshConstraints() {
                 const $constraintTableBody = $('#constraintTableBody');
                 
@@ -739,7 +1185,7 @@
                 };
 
                 $.ajax({
-                    url: '@Url.Action("GetConstraintsForClass", "Constraint")',
+                    url: '/Constraint/GetConstraintsForClass',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(classData),

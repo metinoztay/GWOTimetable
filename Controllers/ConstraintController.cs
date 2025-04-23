@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using GWOTimetable.DTOs;
 
 namespace GWOTimetable.Controllers
 {
@@ -521,7 +522,6 @@ namespace GWOTimetable.Controllers
             }
         }
 
-
         [HttpPost]
         public async Task<IActionResult> ClearAllEducatorConstraints([FromBody] int educatorId)
         {
@@ -556,7 +556,6 @@ namespace GWOTimetable.Controllers
             }
         }
 
-        
         [HttpPost]
         public async Task<IActionResult> AddConstraintForClass([FromBody] ConstraintDTO constraint)
         {
@@ -637,6 +636,206 @@ namespace GWOTimetable.Controllers
             }
 
             return Ok(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveAllClassConstraints([FromBody] SaveClassConstraintsRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return Json(new { success = false, message = "Invalid data provided.", errors });
+            }
+
+            List<string> errorDetails = new List<string>();
+            string successMessage = "Class constraints saved successfully.";
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Handle Removals
+                    if (request.ConstraintsToRemove != null && request.ConstraintsToRemove.Any())
+                    {
+                        foreach (var constraintToRemove in request.ConstraintsToRemove)
+                        {
+                            // Sınıf kısıtlamasını kaldırma (ClassCourseId = 0 ise)
+                            if (constraintToRemove.ClassCourseId == 0)
+                            {
+                                var existingConstraint = await _context.ClassConstraints
+                                    .FirstOrDefaultAsync(cc => cc.ClassId == request.ClassId &&
+                                                        cc.DayId == constraintToRemove.DayId &&
+                                                        cc.LessonId == constraintToRemove.LessonId);
+                            
+                                if (existingConstraint != null)
+                                {
+                                    _context.ClassConstraints.Remove(existingConstraint);
+                                    Console.WriteLine($"Removing Class Constraint: ClassId={request.ClassId}, DayId={constraintToRemove.DayId}, LessonId={constraintToRemove.LessonId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Attempted to remove non-existent Class Constraint: ClassId={request.ClassId}, DayId={constraintToRemove.DayId}, LessonId={constraintToRemove.LessonId}");
+                                }
+                            }
+                            // Ders kısıtlamasını kaldırma (ClassCourseId > 0 ise)
+                            else
+                            {
+                                var existingTimetableConstraint = await _context.TimetableConstraints
+                                    .FirstOrDefaultAsync(tc => tc.WorkspaceId == selectedWorkspaceId &&
+                                                      tc.ClassCourseId == constraintToRemove.ClassCourseId &&
+                                                      tc.DayId == constraintToRemove.DayId &&
+                                                      tc.LessonId == constraintToRemove.LessonId);
+                                
+                                if (existingTimetableConstraint != null)
+                                {
+                                    _context.TimetableConstraints.Remove(existingTimetableConstraint);
+                                    Console.WriteLine($"Removing Timetable Constraint: ClassCourseId={constraintToRemove.ClassCourseId}, DayId={constraintToRemove.DayId}, LessonId={constraintToRemove.LessonId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Attempted to remove non-existent Timetable Constraint: ClassCourseId={constraintToRemove.ClassCourseId}, DayId={constraintToRemove.DayId}, LessonId={constraintToRemove.LessonId}");
+                                }
+                            }
+                        }
+                        await _context.SaveChangesAsync(); // Save removals before additions
+                    }
+
+                    // Handle Additions
+                    if (request.ConstraintsToAdd != null && request.ConstraintsToAdd.Any())
+                    {
+                        foreach (var constraintToAdd in request.ConstraintsToAdd)
+                        {
+                            // Sınıf kısıtlaması ekleme (ClassCourseId = 0 ise)
+                            if (constraintToAdd.ClassCourseId == 0)
+                            {
+                                // Zaten var mı kontrol et
+                                var existingClassConstraint = await _context.ClassConstraints
+                                    .FirstOrDefaultAsync(cc => cc.ClassId == request.ClassId &&
+                                                          cc.DayId == constraintToAdd.DayId &&
+                                                          cc.LessonId == constraintToAdd.LessonId);
+                                
+                                if (existingClassConstraint == null)
+                                {
+                                    var newConstraint = new ClassConstraint
+                                    {
+                                        WorkspaceId = selectedWorkspaceId,
+                                        ClassId = request.ClassId,
+                                        DayId = constraintToAdd.DayId,
+                                        LessonId = constraintToAdd.LessonId,
+                                        IsPlaceable = false
+                                    };
+                                    _context.ClassConstraints.Add(newConstraint);
+                                    Console.WriteLine($"Adding Class Constraint: ClassId={request.ClassId}, DayId={constraintToAdd.DayId}, LessonId={constraintToAdd.LessonId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Skipping duplicate add Class Constraint: ClassId={request.ClassId}, DayId={constraintToAdd.DayId}, LessonId={constraintToAdd.LessonId}");
+                                }
+                            }
+                            // Ders kısıtlaması ekleme (ClassCourseId > 0 ise)
+                            else
+                            {
+                                // Zaten var mı kontrol et
+                                var existingTimetableConstraint = await _context.TimetableConstraints
+                                    .FirstOrDefaultAsync(tc => tc.WorkspaceId == selectedWorkspaceId &&
+                                                          tc.ClassCourseId == constraintToAdd.ClassCourseId &&
+                                                          tc.DayId == constraintToAdd.DayId &&
+                                                          tc.LessonId == constraintToAdd.LessonId);
+                                
+                                if (existingTimetableConstraint == null)
+                                {
+                                    // ClassCourse'un geçerli olup olmadığını kontrol et
+                                    var classCourseExists = await _context.ClassCourses
+                                        .AnyAsync(cc => cc.ClassCourseId == constraintToAdd.ClassCourseId && 
+                                                   cc.ClassId == request.ClassId);
+                                    
+                                    if (!classCourseExists)
+                                    {
+                                        errorDetails.Add($"Invalid ClassCourseId: {constraintToAdd.ClassCourseId} for Class {request.ClassId}");
+                                        continue;
+                                    }
+                                    
+                                    var newTimetableConstraint = new TimetableConstraint
+                                    {
+                                        WorkspaceId = selectedWorkspaceId,
+                                        ClassCourseId = constraintToAdd.ClassCourseId,
+                                        DayId = constraintToAdd.DayId,
+                                        LessonId = constraintToAdd.LessonId
+                                    };
+                                    _context.TimetableConstraints.Add(newTimetableConstraint);
+                                    Console.WriteLine($"Adding Timetable Constraint: ClassCourseId={constraintToAdd.ClassCourseId}, DayId={constraintToAdd.DayId}, LessonId={constraintToAdd.LessonId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Skipping duplicate add Timetable Constraint: ClassCourseId={constraintToAdd.ClassCourseId}, DayId={constraintToAdd.DayId}, LessonId={constraintToAdd.LessonId}");
+                                }
+                            }
+                        }
+                        await _context.SaveChangesAsync(); // Save additions
+                    }
+
+                    await transaction.CommitAsync();
+                    Console.WriteLine("Transaction committed successfully");
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    await transaction.RollbackAsync();
+                    // Log the exception details (ex)
+                    Console.WriteLine($"Concurrency error saving class constraints: {ex.ToString()}"); // Log the exception
+                    errorDetails.Add("A concurrency error occurred. Someone else might have modified the constraints. Please refresh and try again.");
+                    return Json(new { success = false, message = "Concurrency error.", errors = errorDetails });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    // Log the exception details (ex)
+                    errorDetails.Add("An unexpected error occurred while saving constraints.");
+                    Console.WriteLine($"Error saving class constraints: {ex.ToString()}");
+                    return Json(new { success = false, message = "An error occurred.", errors = errorDetails });
+                }
+            }
+
+            if (errorDetails.Any())
+            {
+                successMessage = "Constraints saved with some issues."; // Modify message if there were non-critical errors
+                return Json(new { success = true, message = successMessage, errors = errorDetails }); // Still success=true if transaction committed
+            }
+
+            return Json(new { success = true, message = successMessage, errors = new List<string>() });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ClearAllClassConstraints([FromBody] ClearClassConstraintsRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Invalid Class ID provided." });
+            }
+
+            try
+            {
+                var constraintsToClear = await _context.ClassConstraints
+                    .Where(cc => cc.ClassId == request.ClassId)
+                    .ToListAsync();
+
+                if (constraintsToClear.Any())
+                {
+                    _context.ClassConstraints.RemoveRange(constraintsToClear);
+                    await _context.SaveChangesAsync();
+                    return Json(new { success = true, message = "All class constraints cleared successfully." });
+                }
+                else
+                {
+                    return Json(new { success = true, message = "No class constraints found to clear." });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (ex)
+                 Console.WriteLine($"Error clearing class constraints for ClassId {request.ClassId}: {ex.ToString()}");
+                return Json(new { success = false, message = "An error occurred while clearing constraints." });
+            }
         }
     }
 }

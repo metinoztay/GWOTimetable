@@ -89,282 +89,468 @@
     }));
 }
 
-<div class="card-header d-flex align-items-center">
-    <div class="d-flex w-100 justify-content-between">
-        <h3 class="card-title"><i class="fas fa-calendar-days"></i>&nbsp; Schedule</h3>
-        <span id="constraintChangeAlert" class="badge badge-warning ml-2" style="display: none; font-size: 0.9em; position: absolute; left: 50%; transform: translateX(-50%);">
-            <i class="fas fa-exclamation-triangle"></i>&nbsp; You have unsaved changes
-        </span>
-        <div class="ml-auto">
-            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllConstraints()">
-                <i class="fa-solid fa-eraser"></i>&nbsp; Clear
-            </button>
-            <button type="button" id="saveConstraintsButton" class="btn btn-outline-success btn-sm" onclick="saveAllChanges()">
-                <i class="fas fa-save"></i>&nbsp; Save Changes
-            </button>
-            <button type="button" id="cancelChangesButton" class="btn btn-outline-danger btn-sm" onclick="cancelChanges()">
-                <i class="fas fa-undo"></i>&nbsp; Cancel
-            </button>
+<style>
+    .spinner-overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .spinner-container {
+        position: relative;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+
+<div class="spinner-container">
+    <div class="spinner-overlay">
+        <div class="spinner-border" role="status">
         </div>
     </div>
-</div>
+    <div class="card-header d-flex align-items-center">
+        <div class="d-flex w-100 justify-content-between">
+            <h3 class="card-title"><i class="fas fa-calendar-days"></i>&nbsp; Schedule</h3>
+            <span id="constraintChangeAlert" class="badge badge-warning ml-2" style="display: none; font-size: 0.9em; position: absolute; left: 50%; transform: translateX(-50%);">
+                <i class="fas fa-exclamation-triangle"></i>&nbsp; You have unsaved changes
+            </span>
+            <div class="ml-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllConstraints()">
+                    <i class="fa-solid fa-eraser"></i>&nbsp; Clear
+                </button>
+                <button type="button" id="saveConstraintsButton" class="btn btn-outline-success btn-sm" onclick="saveAllChanges()">
+                    <i class="fas fa-save"></i>&nbsp; Save Changes
+                </button>
+                <button type="button" id="cancelChangesButton" class="btn btn-outline-danger btn-sm" onclick="cancelChanges()">
+                    <i class="fas fa-undo"></i>&nbsp; Cancel
+                </button>
+            </div>
+        </div>
+    </div>
 
-<div class="card-body p-0">
-    <table class="table table-bordered">
-        <tr>
-            <td style="width: 8%; text-align: center; vertical-align: middle;"></td>
-            @foreach (var day in days)
-            {
-                if (day.LessonCount > 0)
-                {
-                    <td style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">
-                        @day.DayOfWeek
-                    </td>
-                }
-            }
-        </tr>
-
-        @for (int i = 0; i < maxLessonCount; i++)
-        {
+    <div class="card-body p-0">
+        <table class="table table-bordered">
             <tr>
-                <td style="width: 8%; text-align: center; vertical-align: middle;">
-                    @(lessons[i].StartTime)-@(lessons[i].EndTime)
-                </td>
-
-                @for (int j = 0; j < Model.Days.Count(); j++)
+                <td style="width: 8%; text-align: center; vertical-align: middle;"></td>
+                @foreach (var day in days)
                 {
-                    if (days[j].LessonCount > 0)
+                    if (day.LessonCount > 0)
                     {
-                        if (i < days[j].LessonCount)
+                        <td style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">
+                            @day.DayOfWeek
+                        </td>
+                    }
+                }
+            </tr>
+
+            @for (int i = 0; i < maxLessonCount; i++)
+            {
+                <tr>
+                    <td style="width: 8%; text-align: center; vertical-align: middle;">
+                        @(lessons[i].StartTime)-@(lessons[i].EndTime)
+                    </td>
+
+                    @for (int j = 0; j < Model.Days.Count(); j++)
+                    {
+                        if (days[j].LessonCount > 0)
                         {
-                            @if (FindTimetableConstraint(days[j].DayId, lessons[i].LessonId))
+                            if (i < days[j].LessonCount)
                             {
-                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ADD8E6; cursor: pointer; text-align: center; vertical-align: middle;"
-                                    data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId" 
-                                    data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
-                                    ondblclick="RemoveConstraint(event, @days[j].DayId, @lessons[i].LessonId)">
-                                    @GetConstraintInfo(days[j].DayId, lessons[i].LessonId)
-                                </td>
-                            }
-                            else if (FindClassConstraint(days[j].DayId, lessons[i].LessonId))
-                            {
-                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ffe6e6; cursor: pointer; text-align: center; vertical-align: middle;"
-                                    data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
-                                    data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
-                                    ondblclick="RemoveConstraint(event, @days[j].DayId, @lessons[i].LessonId)">
-                                    Closed
-                                </td>
+                                @if (FindTimetableConstraint(days[j].DayId, lessons[i].LessonId))
+                                {
+                                    <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ADD8E6; cursor: pointer; text-align: center; vertical-align: middle;"
+                                        data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId" 
+                                        data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
+                                        ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
+                                        @GetConstraintInfo(days[j].DayId, lessons[i].LessonId)
+                                    </td>
+                                }
+                                else if (FindClassConstraint(days[j].DayId, lessons[i].LessonId))
+                                {
+                                    <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ffe6e6; cursor: pointer; text-align: center; vertical-align: middle;"
+                                        data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
+                                        data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
+                                        ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
+                                        Closed
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; cursor: pointer; text-align: center; vertical-align: middle;"
+                                        data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
+                                        onclick="AddConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)"
+                                        onmouseover="this.style.background='#f5f5f5'"
+                                        onmouseout="this.style.background='white'">
+                                    </td>
+                                }
                             }
                             else
                             {
-                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; cursor: pointer; text-align: center; vertical-align: middle;"
-                                    data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
-                                    onclick="AddConstraint(event, @days[j].DayId, @lessons[i].LessonId)"
-                                    onmouseover="this.style.background='#f5f5f5'"
-                                    onmouseout="this.style.background='white'">
+                                <td
+                                    style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ccc; opacity: 0.5; pointer-events: none;">
                                 </td>
                             }
                         }
                     }
-                }
-            </tr>
-        }
-    </table>
+                </tr>
+            }
+        </table>
+    </div>
 </div>
 
 <script>
-    const classCoursesData = @Html.Raw(classCoursesJson);
-    const coursesData = @Html.Raw(coursesJson);
+    var classCoursesData = @Html.Raw(classCoursesJson);
+    var coursesData = @Html.Raw(coursesJson);
     
-    let hasUnsavedChanges = false;
-    let addedConstraints = [];
-    let removedConstraints = [];
-
-    function AddConstraint(event, dayId, lessonId) {
-        event.preventDefault();
-        const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+    var constraintsToAdd = [];
+    var constraintsToRemove = [];
+    var selectedConstraintButton = null;
+    var hasUnsavedChanges = false; 
+    var currentClassId = @(Model.ClassCourses.FirstOrDefault()?.ClassId ?? 0);
+    
+    $(function() {
+        console.log("Class constraints view initialized");
+        console.log("Current class ID:", currentClassId);
         
-        var classData = {
-            ClassId: currentClassId,
-            ClassCourseId: classCourseId,
-            DayId: dayId,
-            LessonId: lessonId
-        };
-
-        $.ajax({
-            url: '@Url.Action("AddConstraintForClass", "Constraint")',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(classData),
-            success: function (response) {
-                if (response && response.success) {
-                    RefreshConstraints();
-                } else {
-                    toastr.error(response?.message || 'Failed to add constraint');
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('Error adding constraint:', error);
-                toastr.error('Failed to add constraint');
-            }
+        selectedConstraintButton = { data: function() { return { type: 'closed' }; } };
+        
+        $('.constraint-option-button').on('click', function() {
+            $('.constraint-option-button').removeClass('active');
+            $(this).addClass('active');
+            selectedConstraintButton = $(this);
         });
-    }
+    });
 
-    function RemoveConstraint(event, dayId, lessonId) {
-        event.preventDefault();
-        const constraintData = $(event.target).data('constraint-data');
-        if (!constraintData) return;
-
-        var classData = {
-            ClassId: currentClassId,
-            ClassCourseId: constraintData.ClassCourseId,
+    window.AddConstraintLocal = function(element, dayId, lessonId) {
+        console.log("AddConstraintLocal called for day:", dayId, "lesson:", lessonId);
+        
+        const constraint = {
             DayId: dayId,
-            LessonId: lessonId
+            LessonId: lessonId,
+            ClassId: currentClassId, 
+            ClassCourseId: 0 
         };
+        
+        console.log("Kısıtlama ekleniyor:", constraint);
 
-        $.ajax({
-            url: '@Url.Action("RemoveConstraintForClass", "Constraint")',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(classData),
-            success: function (response) {
-                if (response && response.success) {
-                    RefreshConstraints();
-                } else {
-                    toastr.error(response?.message || 'Failed to remove constraint');
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('Error removing constraint:', error);
-                toastr.error('Failed to remove constraint');
+        const removeIndex = constraintsToRemove.findIndex(item => 
+            item.DayId === dayId && item.LessonId === lessonId && item.ClassId === currentClassId
+        );
+
+        if (removeIndex > -1) {
+            constraintsToRemove.splice(removeIndex, 1);
+            console.log("Silme işareti kaldırıldı");
+            
+            const wasUnsaved = $(element).attr('data-was-unsaved') === 'true';
+            if (!wasUnsaved) {
+                $(element).css('background-color', '#ffe6e6'); 
+                $(element).text('Closed');
+                $(element).attr('ondblclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
+                $(element).removeAttr('onclick onmouseover onmouseout data-was-unsaved data-removed-constraint');
+                $(element).attr('data-constraint-data', JSON.stringify(constraint)); 
+            } else {
+                $(element).css('background-color', 'white').text('');
+                $(element).attr('onclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
+                $(element).attr('onmouseover', "this.style.background='#f5f5f5'");
+                $(element).attr('onmouseout', "this.style.background='white'");
+                $(element).removeAttr('ondblclick data-constraint-data data-was-unsaved data-removed-constraint');
             }
-        });
-    }
+            $(element).removeAttr('data-unsaved');
+        } else {
+            const existsInAdd = constraintsToAdd.some(item => 
+                item.DayId === dayId && item.LessonId === lessonId && item.ClassId === currentClassId
+            );
+            if (!existsInAdd) {
+                constraintsToAdd.push(constraint);
+                console.log("constraintsToAdd listesine kısıtlama eklendi");
+            }
+            
+            $(element).css('background-color', '#FFD700'); 
+            $(element).text('Closed');
+            $(element).attr('data-unsaved', 'true');
+            $(element).attr('ondblclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
+            $(element).removeAttr('onclick onmouseover onmouseout');
+            $(element).attr('data-constraint-data', JSON.stringify(constraint));
+            $(element).removeAttr('data-removed-constraint');
+        }
 
-    function saveAllChanges() {
+        showUnsavedChanges();
+    };
+
+    window.RemoveConstraintLocal = function(element, dayId, lessonId) {
+        console.log("RemoveConstraintLocal called for day:", dayId, "lesson:", lessonId);
+        
+        var constraintData = {};
+        try {
+            constraintData = JSON.parse($(element).attr('data-constraint-data') || '{}');
+            constraintData.DayId = dayId;
+            constraintData.LessonId = lessonId;
+            constraintData.ClassId = currentClassId; 
+        } catch (error) {
+            console.error("Kısıtlama verisi ayrıştırılırken hata:", error);
+            constraintData = {
+                DayId: dayId,
+                LessonId: lessonId,
+                ClassId: currentClassId,
+                ClassCourseId: 0 
+            };
+        }
+
+        console.log("Kısıtlama kaldırılıyor:", constraintData);
+        
+        const isUnsaved = $(element).attr('data-unsaved') === 'true';
+        console.log("Kısıtlama kaydedilmemiş:", isUnsaved);
+        
+        if (isUnsaved) {
+            constraintsToAdd = constraintsToAdd.filter(item => 
+                !(item.DayId === dayId && item.LessonId === lessonId && item.ClassId === currentClassId)
+            );
+            console.log("constraintsToAdd listesinden kaydedilmemiş kısıtlama kaldırıldı");
+        } else {
+            const existsInRemove = constraintsToRemove.some(item => 
+                item.DayId === dayId && item.LessonId === lessonId && item.ClassId === currentClassId
+            );
+            if (!existsInRemove) {
+                constraintsToRemove.push(constraintData);
+                console.log("constraintsToRemove listesine kısıtlama eklendi");
+            }
+        }
+
+        $(element).attr('data-removed-constraint', JSON.stringify(constraintData));
+        $(element).attr('data-was-unsaved', isUnsaved ? 'true' : 'false');
+
+        $(element).css('background-color', 'white').text('');
+        $(element).attr('onclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
+        $(element).attr('onmouseover', "this.style.background='#f5f5f5'");
+        $(element).attr('onmouseout', "this.style.background='white'");
+        $(element).removeAttr('ondblclick data-constraint-data data-unsaved');
+        
+        showUnsavedChanges();
+    };
+    
+    function showUnsavedChanges() {
+        hasUnsavedChanges = constraintsToAdd.length > 0 || constraintsToRemove.length > 0;
+        if (hasUnsavedChanges) {
+            $('#constraintChangeAlert').show();
+            $('#saveConstraintsButton').removeClass('btn-outline-success').addClass('btn-success');
+            $('#cancelChangesButton').removeClass('btn-outline-danger').addClass('btn-danger');
+        } else {
+            $('#constraintChangeAlert').hide();
+            $('#saveConstraintsButton').removeClass('btn-success').addClass('btn-outline-success');
+            $('#cancelChangesButton').removeClass('btn-danger').addClass('btn-outline-danger');
+        }
+    }
+    
+    window.saveAllChanges = function() {
         if (!hasUnsavedChanges) {
             return;
         }
         
-        const changes = {
-            ConstraintsToAdd: addedConstraints,
-            ConstraintsToRemove: removedConstraints
+        $('.spinner-overlay').css('display', 'flex');
+
+        var changes = {
+            ClassId: currentClassId, 
+            ConstraintsToAdd: constraintsToAdd,
+            ConstraintsToRemove: constraintsToRemove
         };
 
+        console.log("Sınıf değişiklikleri kaydediliyor:", changes);
+
         $.ajax({
-            url: '/Constraint/SaveAllConstraints',
+            url: '/Constraint/SaveAllClassConstraints',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(changes),
             success: function(response) {
+                $('.spinner-overlay').hide();
+                console.log("Sunucu yanıtı:", response);
+                
                 if (response && response.success) {
-                    Swal.fire({
+                    let swalOptions = {
                         icon: 'success',
-                        title: 'Changes saved successfully',
-                        showConfirmButton: false,
-                        timer: 1500
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    let errorMessage = response?.message || 'Failed to save changes. Please try again.';
-                    let errorDetails = '';
+                        title: 'Başarılı!',
+                        text: response.message || 'Değişiklikler başarıyla kaydedildi.',
+                        confirmButtonText: 'Tamam'
+                    };
                     
-                    if (response?.duplicateConstraints?.length > 0) {
-                        errorDetails = 'Duplicate constraints found:\n' + 
-                            response.duplicateConstraints.map(dc => 
-                                `Day: ${dc.dayOfWeek}, Lesson: ${dc.lessonTime}`
-                            ).join('\n');
+                    $('td[data-unsaved="true"]').each(function() {
+                        const $cell = $(this);
+                        $cell.css('background-color', '#ffe6e6'); 
+                        $cell.removeAttr('data-unsaved');
+                    });
+                    
+                    constraintsToAdd = [];
+                    constraintsToRemove = [];
+                    
+                    Swal.fire(swalOptions);
+                    
+                    showUnsavedChanges();
+                } else {
+                    let errorMessages = '';
+                    if (response && response.errors && response.errors.length > 0) {
+                        errorMessages = '<ul>' + response.errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
                     }
-
+                    
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error',
-                        text: errorMessage,
-                        ...(errorDetails && { footer: errorDetails })
+                        title: 'Hata',
+                        html: (response && response.message ? response.message : 'Değişiklikler kaydedilirken bir hata oluştu.') + 
+                              (errorMessages ? '<br>' + errorMessages : ''),
+                        confirmButtonText: 'Tamam'
                     });
                 }
             },
             error: function(xhr, status, error) {
-                let errorMessage = "An unknown error occurred. Please try again.";
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
+                $('.spinner-overlay').hide();
+                console.error("AJAX hatası:", status, error);
                 
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: errorMessage
+                    title: 'Hata',
+                    text: 'Sunucuyla iletişim kurarken bir hata oluştu.',
+                    confirmButtonText: 'Tamam'
                 });
             }
         });
-    }
-
-    function cancelChanges() {
-        if (hasUnsavedChanges) {
-            Swal.fire({
-                title: 'Discard Changes?',
-                text: "Are you sure you want to discard all unsaved changes?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, discard changes',
-                cancelButtonText: 'No, keep editing'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    location.reload();
-                }
-            });
+    };
+    
+    window.cancelChanges = function() {
+        if (!hasUnsavedChanges) {
+            return;
         }
-    }
-
-    function clearAllConstraints() {
+        
         Swal.fire({
-            title: 'Clear All Constraints?',
-            text: "Are you sure you want to clear all constraints? This action cannot be undone.",
+            title: 'Değişiklikleri İptal Et?',
+            text: "Tüm kaydedilmemiş değişiklikler kaybolacak. Devam etmek istiyor musunuz?",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, clear all',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: 'Evet, iptal et',
+            cancelButtonText: 'Hayır'
         }).then((result) => {
             if (result.isConfirmed) {
+                console.log("Değişiklikler iptal ediliyor");
+                
+                for (const constraint of constraintsToAdd) {
+                    const cell = $(`td[data-day-id="${constraint.DayId}"][data-lesson-id="${constraint.LessonId}"]`);
+                    if (cell.length) {
+                        cell.css('background-color', 'white').text('');
+                        cell.attr('onclick', `AddConstraintLocal(this, ${constraint.DayId}, ${constraint.LessonId})`);
+                        cell.attr('onmouseover', "this.style.background='#f5f5f5'");
+                        cell.attr('onmouseout', "this.style.background='white'");
+                        cell.removeAttr('ondblclick data-constraint-data data-unsaved');
+                    }
+                }
+                
+                for (const constraint of constraintsToRemove) {
+                    const cell = $(`td[data-day-id="${constraint.DayId}"][data-lesson-id="${constraint.LessonId}"]`);
+                    if (cell.length) {
+                        const removedConstraintData = cell.attr('data-removed-constraint');
+                        if (removedConstraintData) {
+                            const removedConstraint = JSON.parse(removedConstraintData);
+                            const wasUnsaved = cell.attr('data-was-unsaved') === 'true';
+                            
+                            if (!wasUnsaved) {
+                                cell.css('background-color', '#ffe6e6'); 
+                                cell.text('Closed');
+                                cell.attr('ondblclick', `RemoveConstraintLocal(this, ${constraint.DayId}, ${constraint.LessonId})`);
+                                cell.removeAttr('onclick onmouseover onmouseout');
+                                cell.attr('data-constraint-data', removedConstraintData);
+                                cell.removeAttr('data-removed-constraint data-was-unsaved');
+                            }
+                        }
+                    }
+                }
+                
+                constraintsToAdd = [];
+                constraintsToRemove = [];
+                showUnsavedChanges();
+                
+                Swal.fire(
+                    'İptal edildi!',
+                    'Değişiklikler iptal edildi.',
+                    'success'
+                );
+            }
+        });
+    };
+
+    window.clearAllConstraints = function() {
+        Swal.fire({
+            title: 'Tüm Sınıf Kısıtlamalarını Temizle?',
+            text: "Bu, bu sınıf için tüm 'Kapalı' kısıtlamalarını silecektir. Bu işlem geri alınamaz!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Evet, temizle',
+            cancelButtonText: 'İptal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('.spinner-overlay').css('display', 'flex');
+                
                 $.ajax({
-                    url: '/Constraint/ClearAllConstraints',
+                    url: '/Constraint/ClearAllClassConstraints',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({
-                        ClassId: selectedConstraintButton.data('class-id')
-                    }),
+                    data: JSON.stringify({ ClassId: currentClassId }),
                     success: function(response) {
+                        $('.spinner-overlay').hide();
+                        
                         if (response && response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'All constraints cleared successfully',
-                                showConfirmButton: false,
-                                timer: 1500
-                            }).then(() => {
-                                location.reload();
+                            $('td[data-constraint-data]').each(function() {
+                                const dayId = $(this).attr('data-day-id');
+                                const lessonId = $(this).attr('data-lesson-id');
+                                
+                                $(this).css('background-color', 'white').text('');
+                                $(this).attr('onclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
+                                $(this).attr('onmouseover', "this.style.background='#f5f5f5'");
+                                $(this).attr('onmouseout', "this.style.background='white'");
+                                $(this).removeAttr('ondblclick data-constraint-data data-unsaved');
                             });
+                            
+                            constraintsToAdd = [];
+                            constraintsToRemove = [];
+                            showUnsavedChanges();
+                            
+                            Swal.fire(
+                                'Temizlendi!',
+                                response.message || 'Tüm sınıf kısıtlamaları başarıyla temizlendi.',
+                                'success'
+                            );
                         } else {
                             Swal.fire({
                                 icon: 'error',
-                                title: 'Error',
-                                text: response?.message || 'Failed to clear constraints. Please try again.'
+                                title: 'Hata',
+                                text: response && response.message ? response.message : 'Kısıtlamaları temizlerken bir hata oluştu.',
+                                confirmButtonText: 'Tamam'
                             });
                         }
                     },
-                    error: function() {
+                    error: function(xhr, status, error) {
+                        $('.spinner-overlay').hide();
+                        console.error("AJAX hatası:", status, error);
+                        
                         Swal.fire({
                             icon: 'error',
-                            title: 'Error',
-                            text: 'Failed to clear constraints. Please try again.'
+                            title: 'Hata',
+                            text: 'Sunucuyla iletişim kurarken bir hata oluştu.',
+                            confirmButtonText: 'Tamam'
                         });
                     }
                 });
             }
         });
-    }
+    };
 </script>
