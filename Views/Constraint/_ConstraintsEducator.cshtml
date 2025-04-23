@@ -137,95 +137,126 @@
 
 @model Workspace
 
-<div class="card-header d-flex align-items-center">
-    <div class="d-flex w-100 justify-content-between">
-        <h3 class="card-title"><i class="fas fa-calendar-days"></i>&nbsp; Schedule</h3>
-        <span id="constraintChangeAlert" class="badge badge-warning ml-2" style="display: none; font-size: 0.9em; position: absolute; left: 50%; transform: translateX(-50%);">
-            <i class="fas fa-exclamation-triangle"></i>&nbsp; You have unsaved changes
-        </span>
-        <div class="ml-auto">
-            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllConstraints()">
-                <i class="fa-solid fa-eraser"></i>&nbsp; Clear
-            </button>
-            <button type="button" id="saveConstraintsButton" class="btn btn-outline-success btn-sm" onclick="saveAllChanges()">
-                <i class="fas fa-save"></i>&nbsp; Save Changes
-            </button>
-            <button type="button" id="cancelChangesButton" class="btn btn-outline-danger btn-sm" onclick="cancelChanges()">
-                <i class="fas fa-undo"></i>&nbsp; Cancel
-            </button>
+<style>
+    .spinner-overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .spinner-container {
+        position: relative;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+
+<div class="spinner-container">
+    <div class="spinner-overlay">
+        <div class="spinner-border " role="status">
+           
         </div>
     </div>
-    
-</div>
+    <div class="card-header d-flex align-items-center">
+        <div class="d-flex w-100 justify-content-between">
+            <h3 class="card-title"><i class="fas fa-calendar-days"></i>&nbsp; Schedule</h3>
+            <span id="constraintChangeAlert" class="badge badge-warning ml-2" style="display: none; font-size: 0.9em; position: absolute; left: 50%; transform: translateX(-50%);">
+                <i class="fas fa-exclamation-triangle"></i>&nbsp; You have unsaved changes
+            </span>
+            <div class="ml-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllConstraints()">
+                    <i class="fa-solid fa-eraser"></i>&nbsp; Clear
+                </button>
+                <button type="button" id="saveConstraintsButton" class="btn btn-outline-success btn-sm" onclick="saveAllChanges()">
+                    <i class="fas fa-save"></i>&nbsp; Save Changes
+                </button>
+                <button type="button" id="cancelChangesButton" class="btn btn-outline-danger btn-sm" onclick="cancelChanges()">
+                    <i class="fas fa-undo"></i>&nbsp; Cancel
+                </button>
+            </div>
+        </div>
+            
+    </div>
 
-<table class="table table-bordered">
+    <table class="table table-bordered">
 
-    <tr>
-        <td style="width: 8%; text-align: center; vertical-align: middle;"></td>
-        @foreach (var day in days)
-        {
-            if (day.LessonCount > 0)
-            {
-                <td
-                    style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">
-                    @day.DayOfWeek</td>
-            }
-
-        }
-    </tr>
-
-    @for (int i = 0; i < maxLessonCount; i++)
-    {
         <tr>
-            <td style="width: 8%; text-align: center; vertical-align: middle;">
-                @(lessons[i].StartTime)-@(lessons[i].EndTime)</td>
-
-            @for (int j = 0; j < Model.Days.Count(); j++)
+            <td style="width: 8%; text-align: center; vertical-align: middle;"></td>
+            @foreach (var day in days)
             {
-                if (days[j].LessonCount > 0)
+                if (day.LessonCount > 0)
                 {
-                    if (i < days[j].LessonCount)
-                    {
+                    <td
+                        style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">
+                        @day.DayOfWeek</td>
+                }
 
-                        @if (FindTimetableConstraint(days[j].DayId, lessons[i].LessonId))
+            }
+        </tr>
+
+        @for (int i = 0; i < maxLessonCount; i++)
+        {
+            <tr>
+                <td style="width: 8%; text-align: center; vertical-align: middle;">
+                    @(lessons[i].StartTime)-@(lessons[i].EndTime)</td>
+
+                @for (int j = 0; j < Model.Days.Count(); j++)
+                {
+                    if (days[j].LessonCount > 0)
+                    {
+                        if (i < days[j].LessonCount)
                         {
-                            <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ADD8E6; cursor: pointer; text-align: center; vertical-align: middle;"
-                                data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId" 
-                                data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
-                                ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
-                                @GetConstraintInfo(days[j].DayId, lessons[i].LessonId)
-                            </td>
-                        }
-                        else if (FindEducatorConstraint(days[j].DayId, lessons[i].LessonId))
-                        {
-                            <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ffe6e6; cursor: pointer; text-align: center; vertical-align: middle;"
-                                data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
-                                data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
-                                ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
-                                Closed.
-                            </td>
+
+                            @if (FindTimetableConstraint(days[j].DayId, lessons[i].LessonId))
+                            {
+                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ADD8E6; cursor: pointer; text-align: center; vertical-align: middle;"
+                                    data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId" 
+                                    data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
+                                    ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
+                                    @GetConstraintInfo(days[j].DayId, lessons[i].LessonId)
+                                </td>
+                            }
+                            else if (FindEducatorConstraint(days[j].DayId, lessons[i].LessonId))
+                            {
+                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ffe6e6; cursor: pointer; text-align: center; vertical-align: middle;"
+                                    data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
+                                    data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
+                                    ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
+                                    Closed.
+                                </td>
+                            }
+                            else
+                            {
+                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; cursor: pointer; text-align: center; vertical-align: middle;"
+                                    data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
+                                    onclick="AddConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)"
+                                    onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                                </td>
+                            }
+
                         }
                         else
                         {
-                            <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; cursor: pointer; text-align: center; vertical-align: middle;"
-                                data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
-                                onclick="AddConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)"
-                                onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                            <td
+                                style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ccc; opacity: 0.5; pointer-events: none;">
                             </td>
                         }
-
-                    }
-                    else
-                    {
-                        <td
-                            style="width: calc((100% - 8%) / @Model.Days.Count()); height: 70px; background-color: #ccc; opacity: 0.5; pointer-events: none;">
-                        </td>
                     }
                 }
-            }
-        </tr>
-    }
-</table>
+            </tr>
+        }
+    </table>
+</div>
 
 <script>
     // Model verileri JavaScript'e aktarılıyor
@@ -491,17 +522,9 @@
             return;
         }
         
-        // İşlem başlangıcını bildiren SweetAlert göster
-        Swal.fire({
-            title: 'Saving changes...',
-            html: 'Please wait while your changes are being saved.',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
+        // Show the spinner overlay
+        $('.spinner-overlay').css('display', 'flex');
 
-        // Değişiklikleri içeren nesne
         var changes = {
             ConstraintsToAdd: constraintsToAdd,
             ConstraintsToRemove: constraintsToRemove
@@ -509,13 +532,15 @@
 
         console.log("Saving changes:", changes);
 
-        // Sunucuya gönder
         $.ajax({
             url: '/Constraint/SaveAllConstraints',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(changes),
             success: function(response) {
+                // Hide the spinner overlay
+                $('.spinner-overlay').hide();
+                
                 console.log("Server response:", response);
                 
                 // Controller'dan gelen yanıtı kontrol et
@@ -580,13 +605,14 @@
                 }
             },
             error: function(xhr, status, error) {
-                // Hata mesajı
+                // Hide the spinner overlay
+                $('.spinner-overlay').hide();
+                
                 var errorMessage = "An unknown error occurred. Please try again.";
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMessage = xhr.responseJSON.message;
                 }
                 
-                // SweetAlert ile hata mesajı göster
                 Swal.fire({
                     icon: 'error',
                     title: 'Error!',
