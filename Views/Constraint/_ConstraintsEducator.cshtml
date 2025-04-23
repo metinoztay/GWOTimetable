@@ -97,6 +97,24 @@
             return constraint;
         }
         
+        // Eğer bir ClassConstraint varsa, onun bilgilerini al
+        var cc = classConstraints.FirstOrDefault(cc => cc.DayId == dayId && cc.LessonId == lessonId);
+        if (cc != null)
+        {
+            constraint.ClassId = cc.ClassId;
+            constraint.ClassCourseId = 0;
+            return constraint;
+        }
+        
+        // Eğer bir ClassroomConstraint varsa, onun bilgilerini al
+        var cr = classroomConstraints.FirstOrDefault(cr => cr.DayId == dayId && cr.LessonId == lessonId);
+        if (cr != null)
+        {
+            constraint.ClassroomId = cr.ClassroomId;
+            constraint.ClassCourseId = 0;
+            return constraint;
+        }
+        
         return constraint;
     }
     
@@ -398,7 +416,9 @@
                 DayId: dayId,
                 LessonId: lessonId,
                 ClassCourseId: 0,
-                EducatorId: 0
+                EducatorId: 0,
+                ClassId: 0,
+                ClassroomId: 0
             };
         }
 

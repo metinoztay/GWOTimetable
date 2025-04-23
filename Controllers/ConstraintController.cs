@@ -242,6 +242,62 @@ namespace GWOTimetable.Controllers
                                 }
                             }
 
+                            // Class constraint kontrol et ve sil
+                            if (constraint.ClassId > 0)
+                            {
+                                var classConstraints = await _context.ClassConstraints
+                                    .Where(cc => 
+                                        cc.ClassId == constraint.ClassId && 
+                                        cc.DayId == constraint.DayId && 
+                                        cc.LessonId == constraint.LessonId &&
+                                        cc.WorkspaceId == selectedWorkspaceId)
+                                    .ToListAsync();
+                                
+                                if (classConstraints.Any())
+                                {
+                                    foreach (var cc in classConstraints)
+                                    {
+                                        _context.ClassConstraints.Remove(cc);
+                                    }
+                                    
+                                    var result = await _context.SaveChangesAsync();
+                                    localRemoveCount += result;
+                                    
+                                    if (result > 0)
+                                    {
+                                        Console.WriteLine($"Removed {result} ClassConstraints at Day:{constraint.DayId}, Lesson:{constraint.LessonId}");
+                                    }
+                                }
+                            }
+
+                            // Classroom constraint kontrol et ve sil
+                            if (constraint.ClassroomId > 0)
+                            {
+                                var classroomConstraints = await _context.ClassroomConstraints
+                                    .Where(cr => 
+                                        cr.ClassroomId == constraint.ClassroomId && 
+                                        cr.DayId == constraint.DayId && 
+                                        cr.LessonId == constraint.LessonId &&
+                                        cr.WorkspaceId == selectedWorkspaceId)
+                                    .ToListAsync();
+                                
+                                if (classroomConstraints.Any())
+                                {
+                                    foreach (var cr in classroomConstraints)
+                                    {
+                                        _context.ClassroomConstraints.Remove(cr);
+                                    }
+                                    
+                                    var result = await _context.SaveChangesAsync();
+                                    localRemoveCount += result;
+                                    
+                                    if (result > 0)
+                                    {
+                                        Console.WriteLine($"Removed {result} ClassroomConstraints at Day:{constraint.DayId}, Lesson:{constraint.LessonId}");
+                                    }
+                                }
+                            }
+
                             // Timetable constraint kontrol et ve sil
                             if (constraint.ClassCourseId > 0)
                             {
@@ -270,10 +326,10 @@ namespace GWOTimetable.Controllers
                                     }
                                 }
                             }
-                            else if (constraint.EducatorId > 0)
+                            else 
                             {
-                                // ClassCourseId yoksa ama EducatorId varsa, o hücredeki tüm kısıtlamaları sil
-                                // Bu, Close butonu ile kapat durumlarını temizlemek için gerekli
+                                // ClassCourseId yoksa, o hücredeki tüm timetable kısıtlamalarını sil
+                                // Bu, diğer constraint türleri için gerekli olabilir
                                 var timetableConstraints = await _context.TimetableConstraints
                                     .Where(tc => 
                                         tc.DayId == constraint.DayId && 
@@ -293,7 +349,7 @@ namespace GWOTimetable.Controllers
                                     
                                     if (result > 0)
                                     {
-                                        Console.WriteLine($"Removed {result} TimetableConstraints at Day:{constraint.DayId}, Lesson:{constraint.LessonId} for EducatorConstraint");
+                                        Console.WriteLine($"Removed {result} TimetableConstraints at Day:{constraint.DayId}, Lesson:{constraint.LessonId}");
                                     }
                                 }
                             }
