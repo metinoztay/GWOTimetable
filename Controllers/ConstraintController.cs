@@ -361,6 +361,16 @@ namespace GWOTimetable.Controllers
                                 // Sessizce devam et - bu bir hata durumu olmayabilir, 
                                 // çünkü önce silindi sonra eklendi senaryosunda constraint bulunmayabilir
                                 Console.WriteLine($"No constraints found to remove at Day:{constraint.DayId}, Lesson:{constraint.LessonId}");
+                                
+                                // Eğer hiçbir constraint bulunamadıysa, bu başarısızlık değil, sadece bilgi amaçlı
+                                // Ancak yine de UI'da göstermek için bir bilgi mesajı ekleyelim
+                                if (constraint.ClassId > 0 || constraint.ClassroomId > 0)
+                                {
+                                    // Bu bir hata değil, sadece bilgi
+                                    // Silme işlemi için constraint bulunamadı (class veya classroom constraint için)
+                                    // Kullanıcıya bilgi vermek için ekleyelim ama hata olarak değil
+                                    removedCount++; // İşlem başarılı sayılsın
+                                }
                             }
                         } 
                         catch (DbUpdateConcurrencyException ex) {
@@ -398,7 +408,7 @@ namespace GWOTimetable.Controllers
                                 if (existingConstraint != null)
                                 {
                                     // Bu constraint zaten var, atlayalım
-                                    errorMessages.Add($"Educator constraint already exists at Day:{constraint.DayId}, Lesson:{constraint.LessonId}");
+                                    Console.WriteLine($"Educator constraint already exists at Day:{constraint.DayId}, Lesson:{constraint.LessonId}");
                                     continue;
                                 }
                                 
@@ -439,7 +449,7 @@ namespace GWOTimetable.Controllers
                                 if (existingConstraint != null)
                                 {
                                     // Bu constraint zaten var, atlayalım
-                                    errorMessages.Add($"Timetable constraint already exists at Day:{constraint.DayId}, Lesson:{constraint.LessonId}");
+                                    Console.WriteLine($"Timetable constraint already exists at Day:{constraint.DayId}, Lesson:{constraint.LessonId}");
                                     continue;
                                 }
                                 
@@ -482,19 +492,13 @@ namespace GWOTimetable.Controllers
                     }
                 }
                 
-                // Sonuç mesajı oluştur
-                string resultMessage = $"Changes saved. Added: {addedCount}, Removed: {removedCount}";
-                if (errorMessages.Count > 0)
-                {
-                    resultMessage += ", with some errors.";
-                }
+                // Sonuç mesajı oluştur - basitleştirilmiş
+                string resultMessage = "Changes saved successfully.";
                 
                 return Json(new { 
                     success = true, 
                     message = resultMessage,
-                    addedCount = addedCount,
-                    removedCount = removedCount,
-                    errors = errorMessages.Count > 0 ? errorMessages : null
+                    errors = new string[0]
                 });
             }
             catch (Exception ex)

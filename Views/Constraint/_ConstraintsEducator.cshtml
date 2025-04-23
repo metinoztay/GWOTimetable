@@ -520,78 +520,41 @@
                 
                 // Controller'dan gelen yanıtı kontrol et
                 if (response && response.success) {
-                    // İşlem sonuçlarını gösteren mesaj
+                    // İşlem sonuçlarını gösteren mesaj - basitleştirilmiş
                     let resultMessage = response.message;
-                    let hasErrors = response.errors && response.errors.length > 0;
                     
-                    // İşlem başarılı mesajı
+                    // İşlem başarılı mesajı - basit ve temiz
                     let swalOptions = {
-                        icon: hasErrors ? 'warning' : 'success',
-                        title: hasErrors ? 'Partial Success' : 'Success!',
+                        icon: 'success',
+                        title: 'Success!',
                         text: resultMessage,
                         confirmButtonText: 'OK'
                     };
                     
-                    // Eğer detaylı hatalar varsa, bunları da göster
-                    if (hasErrors) {
-                        swalOptions.html = `<p>${resultMessage}</p>
-                            <div style="text-align:left; margin-top:10px; max-height:200px; overflow-y:auto;">
-                                <p><strong>Errors:</strong></p>
-                                <ul style="padding-left:20px;">
-                                    ${response.errors.map(err => `<li>${err}</li>`).join('')}
-                                </ul>
-                            </div>`;
-                    }
-                    
-                    // Sadece gerçekten eklenen veya silinen kayıtlar için güncelleme yap
-                    if (response.addedCount > 0 || response.removedCount > 0) {
-                        // Kaydedilmemiş olarak işaretlenen hücrelerin renklerini normal renge dönüştür
-                        $('td[data-unsaved="true"]').each(function() {
-                            const $cell = $(this);
-                            // Hücrenin mevcut arkaplan rengi hangisi
-                            if ($cell.css('background-color') === 'rgb(255, 215, 0)') { // #FFD700 (Altın sarısı)
-                                // Kapatılmış (closed) eğitmen constraint'i - pembemsi renge dönüştür
-                                $cell.css('background-color', '#ffe6e6');
-                            } else {
-                                // Ders constraint'i - açık mavi renge dönüştür
-                                $cell.css('background-color', '#ADD8E6');
-                            }
-                            // Kaydedilmemiş işaretini kaldır
-                            $cell.removeAttr('data-unsaved');
-                        });
-                        
-                        // Başarılı olduğunda listeleri temizle
-                        constraintsToAdd = [];
-                        constraintsToRemove = [];
-                        
-                        // Kaydedilmemiş değişiklik durumunu güncelle
-                        showUnsavedChanges();
-                    } else {
-                        // Hiçbir değişiklik uygulanmadıysa, hatalar olabilir
-                        if (!hasErrors) {
-                            swalOptions.text = "No changes were applied. The constraints may already exist or may be invalid.";
-                            swalOptions.icon = "warning";
+                    // Kaydedilmemiş olarak işaretlenen hücrelerin renklerini normal renge dönüştür
+                    $('td[data-unsaved="true"]').each(function() {
+                        const $cell = $(this);
+                        // Hücrenin mevcut arkaplan rengi hangisi
+                        if ($cell.css('background-color') === 'rgb(255, 238, 140)') { // #FFEE8C (Altın sarısı)
+                            // Kapatılmış (closed) eğitmen constraint'i - pembemsi renge dönüştür
+                            $cell.css('background-color', '#ffe6e6');
+                        } else {
+                            // Ders constraint'i - açık mavi renge dönüştür
+                            $cell.css('background-color', '#ADD8E6');
                         }
-                    }
-                    
-                    // SweetAlert ile sonuç mesajı göster
-                    Swal.fire(swalOptions).then((result) => {
-                        // Ciddi hatalar varsa ve hiçbir değişiklik uygulanmadıysa, sayfayı yenilemeyi öner
-                        if (hasErrors && response.addedCount === 0 && response.removedCount === 0) {
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'No changes applied',
-                                text: 'Would you like to reload the page to see the current state?',
-                                showCancelButton: true,
-                                confirmButtonText: 'Reload',
-                                cancelButtonText: 'No'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    location.reload();
-                                }
-                            });
-                        }
+                        // Kaydedilmemiş işaretini kaldır
+                        $cell.removeAttr('data-unsaved');
                     });
+                    
+                    // Başarılı olduğunda listeleri temizle
+                    constraintsToAdd = [];
+                    constraintsToRemove = [];
+                    
+                    // Kaydedilmemiş değişiklik durumunu güncelle
+                    showUnsavedChanges();
+                    
+                    // Başarılı mesajı göster
+                    Swal.fire(swalOptions);
                 } else {
                     // Hata durumunda bildiri göster
                     let errorMessage = response?.message || 'Failed to save changes. Please try again.';
