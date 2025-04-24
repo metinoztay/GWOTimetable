@@ -793,15 +793,14 @@
                     // Kaydedilmemiş kısıtlama için UI'yı güncelle
                     if (classCourseId === 0) {
                         // Kaydedilmemiş kapalı kısıtlama
-                        $(element).css('background-color', '#FFD700'); // Altın sarısı renk
-                        $(element).text('Closed');
+                        $(element).css('background-color', '#FFEE8C').text('Closed'); 
+                        $(element).attr('data-unsaved', 'true'); // Kaydedilmemiş olarak işaretle
                     } else {
                         // Kaydedilmemiş ders kısıtlaması
                         $(element).css('background-color', '#6FC276'); // Açık yeşil
                         $(element).text(selectedConstraintButton.text());
                     }
                     
-                    $(element).attr('data-unsaved', 'true');
                     $(element).attr('ondblclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
                     $(element).removeAttr('onclick onmouseover onmouseout');
                     $(element).attr('data-constraint-data', JSON.stringify(constraint));
@@ -1241,4 +1240,10 @@
                 });
             });
         </script>
+        <style>
+            /* 'Closed' butonu üzerine gelince yazı rengini beyaz yap */
+            .constraint-option-button.btn-outline-danger:hover {
+                color: white !important; 
+            }
+        </style>
 }
