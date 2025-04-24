@@ -35,7 +35,10 @@ namespace GWOTimetable.Controllers
                     .ThenInclude(c => c.TimetableConstraints)
                 .Include(w => w.ClassCourses)
                     .ThenInclude(c => c.Course)
+                .Include(w => w.ClassCourses)
+                    .ThenInclude(c => c.Class)
                 .Include(w => w.Courses)
+                .Include(w => w.Classes)
                 .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);
             }
             else
@@ -50,7 +53,10 @@ namespace GWOTimetable.Controllers
                     .ThenInclude(c => c.TimetableConstraints)
                 .Include(w => w.ClassCourses)
                     .ThenInclude(c => c.Course)
+                .Include(w => w.ClassCourses)
+                    .ThenInclude(c => c.Class)
                 .Include(w => w.Courses)
+                .Include(w => w.Classes)
                 .Include(w => w.ClassroomConstraints.Where(cr => cr.ClassroomId == classCourse.ClassroomId))
                 .Include(w => w.ClassConstraints.Where(c => c.ClassId == classCourse.ClassId))
                 .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);
@@ -82,7 +88,10 @@ namespace GWOTimetable.Controllers
                         .ThenInclude(c => c.TimetableConstraints)
                     .Include(w => w.ClassCourses)
                         .ThenInclude(c => c.Course)
+                    .Include(w => w.ClassCourses)
+                        .ThenInclude(c => c.Class)
                     .Include(w => w.Courses)
+                    .Include(w => w.Classes)
                     .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);
                 }
                 else
@@ -103,7 +112,10 @@ namespace GWOTimetable.Controllers
                         .ThenInclude(c => c.TimetableConstraints)
                     .Include(w => w.ClassCourses)
                         .ThenInclude(c => c.Course)
+                    .Include(w => w.ClassCourses)
+                        .ThenInclude(c => c.Class)
                     .Include(w => w.Courses)
+                    .Include(w => w.Classes)
                     .Include(w => w.ClassroomConstraints.Where(cr => cr.ClassroomId == existingClassCourse.ClassroomId))
                     .Include(w => w.EducatorConstraints.Where(e => e.EducatorId == existingClassCourse.EducatorId))
                     .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);

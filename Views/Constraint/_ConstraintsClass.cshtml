@@ -569,4 +569,19 @@
             }
         });
     };
+    
+    // Course ID'den course adını bulmak için yardımcı fonksiyon
+    function getCourseName(courseId) {
+        const course = coursesData.find(c => c.CourseId === courseId);
+        return course ? course.CourseName : "Unknown Course";
+    }
+    
+    // ClassCourse ID'den Course adını bulmak için yardımcı fonksiyon
+    function getCourseNameFromClassCourseId(classCourseId) {
+        const classCourse = classCoursesData.find(cc => cc.ClassCourseId === classCourseId);
+        if (classCourse) {
+            return classCourse.CourseName;
+        }
+        return "Unknown Course";
+    }
 </script>

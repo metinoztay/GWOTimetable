@@ -7,6 +7,7 @@
     List<ClassroomConstraint> classroomConstraints = Model.ClassroomConstraints.ToList();
     List<ClassCourse> classCourses = Model.ClassCourses.ToList();
     List<Course> courses = Model.Courses.ToList();
+    List<Class> classes = Model.Classes.ToList();
     int maxLessonCount = 0;
     foreach (var day in Model.Days)
     {
@@ -31,9 +32,10 @@
             if (classCourse != null)
             {
                 var course = courses.FirstOrDefault(c => c.CourseId == classCourse.CourseId);
-                if (course != null)
+                var class_ = classes.FirstOrDefault(c => c.ClassId == classCourse.ClassId);
+                if (course != null && class_ != null)
                 {
-                    return $"{course.CourseName}";
+                    return $"{course.CourseName}<br>({class_.ClassName})";
                 }
                 return $"Course not found for CourseId: {classCourse.CourseId}";
             }
@@ -125,7 +127,8 @@
         cc.CourseId,
         cc.ClassId,
         cc.ClassroomId,
-        cc.EducatorId
+        cc.EducatorId,
+        ClassName = cc.Class.ClassName
     }));
     
     var coursesJson = System.Text.Json.JsonSerializer.Serialize(courses.Select(c => new 
@@ -223,7 +226,7 @@
                                     data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId" 
                                     data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
                                     ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
-                                    @GetConstraintInfo(days[j].DayId, lessons[i].LessonId)
+                                    @Html.Raw(GetConstraintInfo(days[j].DayId, lessons[i].LessonId))
                                 </td>
                             }
                             else if (FindEducatorConstraint(days[j].DayId, lessons[i].LessonId))
@@ -304,11 +307,12 @@
         return course ? course.CourseName : "Unknown Course";
     }
     
-    // ClassCourse ID'den Course adını bulmak için yardımcı fonksiyon
-    function getCourseNameFromClassCourseId(classCourseId) {
+    // ClassCourse ID'den Course adını ve sınıf adını bulmak için yardımcı fonksiyon
+    function getCourseInfoFromClassCourseId(classCourseId) {
         const classCourse = classCoursesData.find(cc => cc.ClassCourseId === classCourseId);
         if (classCourse) {
-            return getCourseName(classCourse.CourseId);
+            const courseName = getCourseName(classCourse.CourseId);
+            return `${courseName}<br>(${classCourse.ClassName})`;
         }
         return "Unknown Course";
     }
@@ -412,8 +416,8 @@
             $(element).attr('data-unsaved', 'true');  // Kaydedilmemiş olarak işaretle
         } else {
             // Model verilerinden ders adını al
-            const courseName = getCourseNameFromClassCourseId(classCourseId);
-            $(element).css('background-color', '#6FC276').text(courseName);  // Açık yeşil renk
+            const courseInfo = getCourseInfoFromClassCourseId(classCourseId);
+            $(element).css('background-color', '#6FC276').html(courseInfo);  // Açık yeşil renk
             $(element).attr('data-unsaved', 'true');  // Kaydedilmemiş olarak işaretle
         }
 

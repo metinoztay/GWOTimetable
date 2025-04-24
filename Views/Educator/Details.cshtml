@@ -146,8 +146,9 @@
                     <th>Educator</th>
                     <th>Course Code</th>
                     <th>Course</th>
-                    <th class="text-center">Placement Format</th>
+                    <th>Class</th>                   
                     <th class="text-center">Classroom</th>
+                    <th class="text-center">Placement Format</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -162,8 +163,10 @@
                         <td>@c.Educator.Title @c.Educator.FirstName @c.Educator.LastName</td>
                         <td>@c.Course.CourseCode</td>
                         <td>@c.Course.CourseName</td>
-                        <td class="text-center">@c.Course.PlacementFormat</td>
+                        <td>@c.Class.ClassName</td>
+                        
                         <td class="text-center">@c.Classroom.ClassroomName</td>
+                        <td class="text-center">@c.Course.PlacementFormat</td>
                         <td>
 
                             <button class="btn btn-info btn-sm update-course-button mb-2 mb-xl-0" data-classcourse-id="@c.ClassCourseId"
@@ -214,7 +217,7 @@
             <div class="card-body">
                 @foreach (var c in educatorModel.ClassCourses)
                 {
-                    <button type="button" class="btn btn-outline-primary btn-block constraint-option-button" data-classcourse-id="@c.ClassCourseId">(@c.Course.CourseCode) - @c.Classroom.ClassroomName<br>@c.Course.CourseName</button>
+                    <button type="button" class="btn btn-outline-primary btn-block constraint-option-button" data-classcourse-id="@c.ClassCourseId">(@c.Course.CourseCode) - @c.Class.ClassName<br>@c.Course.CourseName</button>
                 }
                 <button type="button" class="btn btn-outline-danger btn-block pt-3 pb-3 constraint-option-button" data-classcourse-id="0">Close</button>                
             </div>
