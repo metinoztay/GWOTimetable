@@ -28,10 +28,11 @@
 
     string GetConstraintInfo(int dayId, int lessonId)
     {
-        var constraint = timetableConstraints.FirstOrDefault(tc => tc.DayId == dayId && tc.LessonId == lessonId);
-        if (constraint != null)
+        // Check for timetable constraint
+        var timetableConstraint = timetableConstraints.FirstOrDefault(tc => tc.DayId == dayId && tc.LessonId == lessonId);
+        if (timetableConstraint != null)
         {
-            var classCourse = classCourses.FirstOrDefault(cc => cc.ClassCourseId == constraint.ClassCourseId);
+            var classCourse = classCourses.FirstOrDefault(cc => cc.ClassCourseId == timetableConstraint.ClassCourseId);
             if (classCourse != null)
             {
                 var course = courses.FirstOrDefault(c => c.CourseId == classCourse.CourseId);
@@ -41,9 +42,24 @@
                 }
                 return $"Course not found for CourseId: {classCourse.CourseId}";
             }
-            return $"ClassCourse not found for ClassCourseId: {constraint.ClassCourseId}";
+            return $"ClassCourse not found for ClassCourseId: {timetableConstraint.ClassCourseId}";
         }
-        return "No timetable constraint found";
+
+        // Check for educator constraint
+        var educatorConstraint = educatorConstraints.FirstOrDefault(ec => ec.DayId == dayId && ec.LessonId == lessonId);
+        if (educatorConstraint != null)
+        {
+            return "Educator not available";
+        }
+
+        // Check for classroom constraint
+        var classroomConstraint = classroomConstraints.FirstOrDefault(cr => cr.DayId == dayId && cr.LessonId == lessonId);
+        if (classroomConstraint != null)
+        {
+            return "Classroom not available";
+        }
+
+        return "No constraint found";
     }
 
     bool FindClassConstraint(int dayId, int lessonId)
