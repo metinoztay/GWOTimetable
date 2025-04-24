@@ -190,75 +190,76 @@
         </div>
             
     </div>
+    <div class="card-body p-0">
+        <table class="table table-bordered">
 
-    <table class="table table-bordered">
-
-        <tr>
-            <td style="width: 8%; text-align: center; vertical-align: middle;"></td>
-            @foreach (var day in days)
-            {
-                if (day.LessonCount > 0)
-                {
-                    <td
-                        style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">
-                        @day.DayOfWeek</td>
-                }
-
-            }
-        </tr>
-
-        @for (int i = 0; i < maxLessonCount; i++)
-        {
             <tr>
-                <td style="width: 8%; text-align: center; vertical-align: middle;">
-                    @(lessons[i].StartTime)-@(lessons[i].EndTime)</td>
-
-                @for (int j = 0; j < Model.Days.Count(); j++)
+                <td style="width: 8%; text-align: center; vertical-align: middle;"></td>
+                @foreach (var day in days)
                 {
-                    if (days[j].LessonCount > 0)
+                    if (day.LessonCount > 0)
                     {
-                        if (i < days[j].LessonCount)
-                        {
+                        <td
+                            style="width: calc((100% - 8%) / @days.Count()); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">
+                            @day.DayOfWeek</td>
+                    }
 
-                            @if (FindTimetableConstraint(days[j].DayId, lessons[i].LessonId))
+                }
+            </tr>
+
+            @for (int i = 0; i < maxLessonCount; i++)
+            {
+                <tr>
+                    <td style="width: 8%; text-align: center; vertical-align: middle;">
+                        @(lessons[i].StartTime)-@(lessons[i].EndTime)</td>
+
+                    @for (int j = 0; j < Model.Days.Count(); j++)
+                    {
+                        if (days[j].LessonCount > 0)
+                        {
+                            if (i < days[j].LessonCount)
                             {
-                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ADD8E6; cursor: pointer; text-align: center; vertical-align: middle;"
-                                    data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId" 
-                                    data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
-                                    ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
-                                    @Html.Raw(GetConstraintInfo(days[j].DayId, lessons[i].LessonId))
-                                </td>
-                            }
-                            else if (FindEducatorConstraint(days[j].DayId, lessons[i].LessonId))
-                            {
-                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ffe6e6; cursor: pointer; text-align: center; vertical-align: middle;"
-                                    data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
-                                    data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
-                                    ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
-                                    Closed.
-                                </td>
+
+                                @if (FindTimetableConstraint(days[j].DayId, lessons[i].LessonId))
+                                {
+                                    <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ADD8E6; cursor: pointer; text-align: center; vertical-align: middle;"
+                                        data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId" 
+                                        data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
+                                        ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
+                                        @Html.Raw(GetConstraintInfo(days[j].DayId, lessons[i].LessonId))
+                                    </td>
+                                }
+                                else if (FindEducatorConstraint(days[j].DayId, lessons[i].LessonId))
+                                {
+                                    <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ffe6e6; cursor: pointer; text-align: center; vertical-align: middle;"
+                                        data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
+                                        data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(days[j].DayId, lessons[i].LessonId))'
+                                        ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)">
+                                        Closed.
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; cursor: pointer; text-align: center; vertical-align: middle;"
+                                        data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
+                                        onclick="AddConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)"
+                                        onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                                    </td>
+                                }
+
                             }
                             else
                             {
-                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; cursor: pointer; text-align: center; vertical-align: middle;"
-                                    data-day-id="@days[j].DayId" data-lesson-id="@lessons[i].LessonId"
-                                    onclick="AddConstraintLocal(this, @days[j].DayId, @lessons[i].LessonId)"
-                                    onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+                                <td
+                                    style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ccc; opacity: 0.5; pointer-events: none;">
                                 </td>
                             }
-
-                        }
-                        else
-                        {
-                            <td
-                                style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ccc; opacity: 0.5; pointer-events: none;">
-                            </td>
                         }
                     }
-                }
-            </tr>
-        }
-    </table>
+                </tr>
+            }
+        </table>
+    </div>
 </div>
 
 <script>
