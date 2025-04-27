@@ -766,7 +766,7 @@
                         } else {
                             // Ders kısıtlaması
                             $(element).css('background-color', '#ADD8E6'); // Açık mavi
-                            $(element).text(selectedConstraintButton.text());
+                            $(element).text(selectedConstraintButton.data('course-name')); // Course name
                         }
                         $(element).attr('ondblclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
                         $(element).removeAttr('onclick onmouseover onmouseout data-was-unsaved data-removed-constraint');
@@ -798,7 +798,7 @@
                     } else {
                         // Kaydedilmemiş ders kısıtlaması
                         $(element).css('background-color', '#6FC276'); // Açık yeşil
-                        $(element).text(selectedConstraintButton.text());
+                        $(element).text(selectedConstraintButton.data('course-name')); // Course name
                     }
                     
                     $(element).attr('ondblclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
@@ -935,7 +935,7 @@
                                     // Ders adını bulmaya çalış
                                     const courseButton = $(`.constraint-option-button[data-classcourse-id="${cellData.ClassCourseId}"]`);
                                     if (courseButton.length) {
-                                        $cell.text(courseButton.text());
+                                        $cell.text(courseButton.data('course-name')); // Course name
                                     } else {
                                         $cell.text('Course');
                                     }
@@ -1054,7 +1054,7 @@
                                             // Ders adını bulmaya çalış
                                             const courseButton = $(`.constraint-option-button[data-classcourse-id="${removedConstraint.ClassCourseId}"]`);
                                             if (courseButton.length) {
-                                                cell.text(courseButton.text());
+                                                cell.text(courseButton.data('course-name')); // Course name
                                             } else {
                                                 cell.text('Course');
                                             }
