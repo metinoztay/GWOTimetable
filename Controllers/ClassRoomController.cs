@@ -39,17 +39,21 @@ namespace GWOTimetable.Controllers
                 return RedirectToAction("Management", "Classroom");
             }
 
-            var classroom = _context.Classrooms.FirstOrDefault(c => c.ClassroomId == classroomId);
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+            // Include related class courses with their classes and courses
+            var classroom = _context.Classrooms
+                .Include(c => c.ClassCourses)
+                    .ThenInclude(cc => cc.Course)
+                .Include(c => c.ClassCourses)
+                    .ThenInclude(cc => cc.Class)
+                .Include(c => c.ClassCourses)
+                    .ThenInclude(cc => cc.Educator)
+                .FirstOrDefault(c => c.ClassroomId == classroomId && c.WorkspaceId == selectedWorkspaceId);
+
             if (classroom == null)
             {
                 return RedirectToAction("Management", "Classroom");
-            }
-
-
-            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
-            if (classroom.WorkspaceId != selectedWorkspaceId)
-            {
-                return BadRequest(new { message = "Educator is not reachable!" });
             }
 
             ViewBag.ActiveTabId = "ClassroomDetails";
@@ -165,4 +169,3 @@ namespace GWOTimetable.Controllers
         }
     }
 }
-
