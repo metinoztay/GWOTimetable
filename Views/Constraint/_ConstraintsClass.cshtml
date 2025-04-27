@@ -69,8 +69,13 @@
 
     ConstraintDTO GetConstraintData(int dayId, int lessonId)
     {
-        var constraint = new ConstraintDTO();
+        var constraint = new ConstraintDTO
+        {
+            DayId = dayId,
+            LessonId = lessonId
+        };
 
+        // Check for timetable constraint
         var timetableConstraint = timetableConstraints.FirstOrDefault(tc => tc.DayId == dayId && tc.LessonId == lessonId);
         if (timetableConstraint != null)
         {
@@ -78,9 +83,29 @@
             if (classCourse != null)
             {
                 constraint.ClassCourseId = classCourse.ClassCourseId;
-                constraint.DayId = dayId;
-                constraint.LessonId = lessonId;
+                constraint.ClassId = classCourse.ClassId;
+                constraint.EducatorId = classCourse.EducatorId;
+                constraint.ClassroomId = classCourse.ClassroomId;
             }
+            return constraint;
+        }
+        
+        // Check for educator constraint
+        var educatorConstraint = educatorConstraints.FirstOrDefault(ec => ec.DayId == dayId && ec.LessonId == lessonId);
+        if (educatorConstraint != null)
+        {
+            constraint.EducatorId = educatorConstraint.EducatorId;
+            constraint.ClassCourseId = 0;
+            return constraint;
+        }
+        
+        // Check for classroom constraint
+        var classroomConstraint = classroomConstraints.FirstOrDefault(cr => cr.DayId == dayId && cr.LessonId == lessonId);
+        if (classroomConstraint != null)
+        {
+            constraint.ClassroomId = classroomConstraint.ClassroomId;
+            constraint.ClassCourseId = 0;
+            return constraint;
         }
 
         return constraint;
@@ -312,6 +337,15 @@
             constraintData.DayId = dayId;
             constraintData.LessonId = lessonId;
             constraintData.ClassId = currentClassId; 
+            
+            // Make sure we have proper type identification for constraints
+            if ($(element).text().trim() === 'Educator not available') {
+                constraintData.ClassCourseId = 0; // Set to 0 to indicate it's not a course constraint
+            } else if ($(element).text().trim() === 'Classroom not available') {
+                constraintData.ClassCourseId = 0; // Set to 0 to indicate it's not a course constraint
+            } else if ($(element).text().trim() === 'Closed') {
+                constraintData.ClassCourseId = 0; // Set to 0 to indicate it's not a course constraint
+            }
         } catch (error) {
             console.error("Kısıtlama verisi ayrıştırılırken hata:", error);
             constraintData = {

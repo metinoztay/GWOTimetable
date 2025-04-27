@@ -675,24 +675,54 @@ namespace GWOTimetable.Controllers
                             // Sınıf kısıtlamasını kaldırma (ClassCourseId = 0 ise)
                             if (constraintToRemove.ClassCourseId == 0)
                             {
-                                var existingConstraint = await _context.ClassConstraints
+                                // Check if it's a class constraint
+                                var existingClassConstraint = await _context.ClassConstraints
                                     .FirstOrDefaultAsync(cc => cc.ClassId == request.ClassId &&
                                                         cc.DayId == constraintToRemove.DayId &&
                                                         cc.LessonId == constraintToRemove.LessonId);
                             
-                                if (existingConstraint != null)
+                                if (existingClassConstraint != null)
                                 {
-                                    _context.ClassConstraints.Remove(existingConstraint);
+                                    _context.ClassConstraints.Remove(existingClassConstraint);
                                     Console.WriteLine($"Removing Class Constraint: ClassId={request.ClassId}, DayId={constraintToRemove.DayId}, LessonId={constraintToRemove.LessonId}");
+                                }
+                                // Check if it's an educator constraint
+                                else if (constraintToRemove.EducatorId > 0)
+                                {
+                                    var existingEducatorConstraint = await _context.EducatorConstraints
+                                        .FirstOrDefaultAsync(ec => ec.EducatorId == constraintToRemove.EducatorId &&
+                                                           ec.DayId == constraintToRemove.DayId &&
+                                                           ec.LessonId == constraintToRemove.LessonId);
+                                    
+                                    if (existingEducatorConstraint != null)
+                                    {
+                                        _context.EducatorConstraints.Remove(existingEducatorConstraint);
+                                        Console.WriteLine($"Removing Educator Constraint: EducatorId={constraintToRemove.EducatorId}, DayId={constraintToRemove.DayId}, LessonId={constraintToRemove.LessonId}");
+                                    }
+                                }
+                                // Check if it's a classroom constraint
+                                else if (constraintToRemove.ClassroomId > 0)
+                                {
+                                    var existingClassroomConstraint = await _context.ClassroomConstraints
+                                        .FirstOrDefaultAsync(cr => cr.ClassroomId == constraintToRemove.ClassroomId &&
+                                                           cr.DayId == constraintToRemove.DayId &&
+                                                           cr.LessonId == constraintToRemove.LessonId);
+                                    
+                                    if (existingClassroomConstraint != null)
+                                    {
+                                        _context.ClassroomConstraints.Remove(existingClassroomConstraint);
+                                        Console.WriteLine($"Removing Classroom Constraint: ClassroomId={constraintToRemove.ClassroomId}, DayId={constraintToRemove.DayId}, LessonId={constraintToRemove.LessonId}");
+                                    }
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"Attempted to remove non-existent Class Constraint: ClassId={request.ClassId}, DayId={constraintToRemove.DayId}, LessonId={constraintToRemove.LessonId}");
+                                    Console.WriteLine($"Attempted to remove non-existent Constraint: ClassId={request.ClassId}, DayId={constraintToRemove.DayId}, LessonId={constraintToRemove.LessonId}");
                                 }
                             }
                             // Ders kısıtlamasını kaldırma (ClassCourseId > 0 ise)
                             else
                             {
+                                // Zaten var mı diye kontrol et
                                 var existingTimetableConstraint = await _context.TimetableConstraints
                                     .FirstOrDefaultAsync(tc => tc.WorkspaceId == selectedWorkspaceId &&
                                                       tc.ClassCourseId == constraintToRemove.ClassCourseId &&

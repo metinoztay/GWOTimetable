@@ -13,5 +13,11 @@ namespace GWOTimetable.DTOs
         
         // Ders (course) tipi kısıtlamaları için gerekli
         public int ClassCourseId { get; set; }
+        
+        // Eğitmen kısıtlamaları için gerekli
+        public int EducatorId { get; set; }
+        
+        // Derslik kısıtlamaları için gerekli
+        public int ClassroomId { get; set; }
     }
 }
