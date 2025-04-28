@@ -110,7 +110,7 @@
                         data-classcourse-id="0" 
                         data-classroom-id="@Model.ClassroomId"
                         data-constraint-type="close">
-                    <i class="fas fa-ban"></i>&nbsp; Mark as Unavailable
+                    Close
                 </button>
             </div>
         </div>
@@ -385,28 +385,25 @@
             
             // Eğer bu bir "closed" kısıtlaması ise (ClassCourseId = 0)
             if (classCourseId === 0) {
-                $(element).css('background-color', '#FFD700'); // Gold for unsaved closed
-                $(element).html('<div style="font-weight: bold; font-size: 0.9em;">Classroom Not Available</div>');
+                $(element).css('background-color', '#FFEE8C'); // Gold for unsaved closed
+                $(element).html('<div style="font-weight: bold; font-size: 0.9em;">Closed</div>');
+                $(element).removeAttr('onclick onmouseover onmouseout');
             } else {
                 // Bu bir ders kısıtlaması
                 const courseCode = selectedConstraintButton.data('course-code');
                 const courseName = selectedConstraintButton.data('course-name');
-                const className = selectedConstraintButton.data('class-name');
                 
                 $(element).css('background-color', '#6FC276'); // Green for unsaved course
-                $(element).html(`<div style="font-weight: bold; font-size: 0.9em;">${courseCode}<br>${courseName}<br>(${className})</div>`);
+                $(element).html(`<div style="font-weight: bold; font-size: 0.9em;">${courseCode}<br>${courseName}</div>`);
+                $(element).removeAttr('onclick onmouseover onmouseout');
             }
+            
+            // Her iki durumda da çift tıklama ile silme özelliğini ekle
+            $(element).attr('ondblclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
+            $(element).attr('data-constraint-data', JSON.stringify(constraintData));
             
             // Kaydedilmemiş değişiklik olarak işaretle
             $(element).attr('data-unsaved', 'true');
-            $(element).attr('data-constraint-data', JSON.stringify(constraintData));
-            
-            // Click işlevini değiştir (artık RemoveConstraintLocal'ı çağırsın)
-            $(element).attr('onclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
-            
-            // Hover efektlerini güncelle
-            $(element).attr('onmouseover', "this.style.cursor='pointer'; this.style.opacity='0.8';");
-            $(element).attr('onmouseout', "this.style.opacity='1';");
             
             // Kaydedilmemiş değişiklikleri takip etmek için listeye ekle
             // Daha önce aynı day/lesson için bir ekleme varsa çıkar
@@ -435,12 +432,8 @@
                 $(element).css('background-color', 'white');
                 $(element).empty();
                 
-                // Click işlevini AddConstraintLocal'a geri çevir
-                $(element).attr('onclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
-                
-                // Hover efektlerini geri al
-                $(element).attr('onmouseover', "this.style.cursor='pointer'; this.style.backgroundColor='#f5f5f5';");
-                $(element).attr('onmouseout', "this.style.backgroundColor='white';");
+                // Çift tıklama işlevini AddConstraintLocal'a geri çevir
+                $(element).attr('ondblclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
                 
                 // constraintsToAdd listesinden çıkar
                 constraintsToAdd = constraintsToAdd.filter(item => 
@@ -453,8 +446,8 @@
                 $(element).css('background-color', 'white');
                 $(element).html('');
                 
-                // Click işlevini AddConstraintLocal'a çevir
-                $(element).attr('onclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
+                // Çift tıklama işlevini AddConstraintLocal'a çevir
+                $(element).attr('ondblclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
                 
                 // constraintsToRemove listesine ekle
                 let constraintData = {};
@@ -622,22 +615,53 @@
                     // API isteği gönder
                     $.ajax({
                         url: '/Constraint/ClearAllClassroomConstraints',
-                        type: 'DELETE',
+                        type: 'POST',
                         contentType: 'application/json',
-                        data: JSON.stringify({ ClassroomId: currentClassroomId }),
+                        data: JSON.stringify(currentClassroomId),
                         success: function(response) {
-                            // Spinner gizle
-                            $spinner.remove();
-                            
+                            // Spinner'ı burada kaldırmıyoruz - refresh işlemi bitene kadar görünür kalacak
                             console.log("Success response:", response);
                             
                             if (response.success) {
-                                // Başarılı mesajı göster
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Constraints Cleared',
-                                    text: 'All classroom constraints have been cleared successfully.',
-                                    confirmButtonText: 'OK'
+                                // Partial view'i yenile
+                                const requestData = {
+                                    ClassroomId: currentClassroomId,
+                                    ClassCourseId: 0
+                                };
+                                
+                                $.ajax({
+                                    url: '/Constraint/GetConstraintsForClassroom',
+                                    type: 'POST',
+                                    contentType: 'application/json',
+                                    data: JSON.stringify(requestData),
+                                    success: function(data) {
+                                        // Refresh işlemi tamamlandı, spinner'ı kaldır
+                                        $spinner.remove();
+                                        
+                                        // Constraint tablosunu güncelle
+                                        $constraintTableBody.html(data);
+                                        
+                                        // Başarılı mesajı göster
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Constraints Cleared',
+                                            text: 'All classroom constraints have been cleared successfully.',
+                                            confirmButtonText: 'OK'
+                                        });
+                                    },
+                                    error: function(xhr, status, error) {
+                                        // Hata durumunda da spinner'ı kaldır
+                                        $spinner.remove();
+                                        
+                                        console.error("AJAX hatası:", status, error);
+                                        // Yine de başarılı mesajı göster
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Constraints Cleared',
+                                            text: 'All classroom constraints have been cleared successfully, but the view could not be refreshed.',
+                                            confirmButtonText: 'OK'
+                                        });
+                                    }
                                 });
                                 
                                 // UnsavedChanges durumu sıfırla

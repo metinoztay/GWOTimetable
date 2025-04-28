@@ -230,18 +230,16 @@
                                 @if (FindClassroomConstraint(day.DayId, lessons[i].LessonId))
                                 {
                                     // Mevcut constraint var - kırmızı arkaplan
-                                    <td ondblclick="RemoveConstraintLocal(this, @day.DayId, @lessons[i].LessonId)"
-                                        onmouseover="this.style.cursor='pointer'; this.style.opacity='0.8';"
-                                        onmouseout="this.style.opacity='1';"
-                                        style="background-color: #ffe6e6; text-align: center; padding: 2px; height: 80px; position: relative;"
-                                        data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(day.DayId, lessons[i].LessonId))'>
-                                        <div style="font-weight: bold; font-size: 0.9em;">Classroom Not Available</div>
+                                    <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ffe6e6; cursor: pointer; text-align: center; vertical-align: middle;"
+                                        data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(day.DayId, lessons[i].LessonId))'
+                                        ondblclick="RemoveConstraintLocal(this, @day.DayId, @lessons[i].LessonId)">
+                                        Closed
                                     </td>
                                 }
                                 else if (FindTimetableConstraint(day.DayId, lessons[i].LessonId))
                                 {
                                     // Başka bir constraint var - mavi arkaplan veya farklı renk
-                                    <td style="background-color: #ADD8E6; text-align: center; vertical-align: middle; padding: 2px; height: 80px; cursor: pointer;"
+                                    <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ADD8E6; cursor: pointer; text-align: center; vertical-align: middle;"
                                         data-day-id="@day.DayId" data-lesson-id="@lessons[i].LessonId"
                                         data-constraint-data='@System.Text.Json.JsonSerializer.Serialize(GetConstraintData(day.DayId, lessons[i].LessonId))'
                                         ondblclick="RemoveConstraintLocal(this, @day.DayId, @lessons[i].LessonId)">
@@ -251,16 +249,17 @@
                                 else
                                 {
                                     // Boş hücre - constraint eklenebilir
-                                    <td onclick="AddConstraintLocal(this, @day.DayId, @lessons[i].LessonId)"
-                                        onmouseover="this.style.cursor='pointer'; this.style.backgroundColor='#f5f5f5';"
-                                        onmouseout="this.style.backgroundColor='white';"
-                                        style="background-color: white; text-align: center; padding: 2px; height: 80px;">
+                                    <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; cursor: pointer; text-align: center; vertical-align: middle;"
+                                        onclick="AddConstraintLocal(this, @day.DayId, @lessons[i].LessonId)"
+                                        onmouseover="this.style.background='#f5f5f5'"
+                                        onmouseout="this.style.background='white'">
                                     </td>
                                 }
                             }
                             else
                             {
-                                <td style="background-color: #f0f0f0; text-align: center; height: 80px;"></td>
+                                <td style="width: calc((100% - 8%) / @Model.Days.Count()); height: 80px; background-color: #ccc; opacity: 0.5; pointer-events: none;">
+                                </td>
                             }
                         }
                     }
@@ -340,17 +339,13 @@
                 
                 // Yeni constraint eklediğimizi göstermek için hücre stilini değiştir
                 $(element).attr('data-unsaved', 'true');
-                $(element).css('background-color', '#FFD700'); // Gold color for unsaved "closed" constraints
-                $(element).html('<div style="font-weight: bold; font-size: 0.9em;">Classroom Not Available</div>');
+                $(element).css('background-color', '#FFEE8C'); // Gold color for unsaved "closed" constraints
+                $(element).html('<div style="font-weight: bold; font-size: 0.9em;">Closed</div>');
                 
                 // ondblclick handler'ı ekle, RemoveConstraintLocal'ı çağırsın
                 $(element).attr('ondblclick', `RemoveConstraintLocal(this, ${dayId}, ${lessonId})`);
                 // onclick handler'ı kaldır
-                $(element).removeAttr('onclick');
-                
-                // Hover effect'i değiştir
-                $(element).attr('onmouseover', "this.style.cursor='pointer'; this.style.opacity='0.8';");
-                $(element).attr('onmouseout', "this.style.opacity='1';");
+                $(element).removeAttr('onclick onmouseover onmouseout');
                 
                 // Constraint verisini hücreye ekle
                 $(element).attr('data-constraint-data', JSON.stringify(constraint));
