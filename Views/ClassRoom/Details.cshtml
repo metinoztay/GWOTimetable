@@ -117,6 +117,22 @@
     </div>
 </div>
 
+<!-- Spinner için özel stil tanımlaması -->
+<style>
+    .classroom-spinner-overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+
 <div class="modal fade" id="deleteClassroomModal" tabindex="-1" role="dialog"
     aria-labelledby="deleteClassroomModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -292,14 +308,7 @@
         function RefreshConstraints() {
             const $constraintTableBody = $('#constraintTableBody');
             
-            // Mevcut tabloyu gizle ve yükleme animasyonunu çıkar
-            $constraintTableBody.children('table').first().hide();
-            $constraintTableBody.find('.loading-spinner').remove();
-            
-            // Yükleme animasyonunu ekle
-            $constraintTableBody.append('<div class="loading-spinner" style="display: flex; align-items: center; justify-content: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.5); z-index: 1;"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
-            
-            // Seçilen buton yoksa, seçim yapılmadığını göster
+            // Eğer seçilen buton yoksa, yükleme yapmaya gerek yok
             if (!selectedConstraintButton) {
                 $constraintTableBody.html(`
                     <div class="text-center py-5">
@@ -309,6 +318,13 @@
                 `);
                 return;
             }
+            
+            // Mevcut tabloyu ve mevcut spinner'ları temizle
+            $constraintTableBody.children('table').first().hide();
+            $constraintTableBody.find('.loading-spinner').remove();
+            
+            // Yükleme animasyonunu ekle (Educator ve Class sayfalarında kullanılan stil ile aynı)
+            $constraintTableBody.append('<div style="display: flex; align-items: center; justify-content: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.5); z-index: 1000;" class="loading-spinner"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
             
             // Seçilen butonun verilerini al
             const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
@@ -477,8 +493,17 @@
             // Debug için değişiklikleri göster
             console.log("Saving changes:", JSON.stringify(changes, null, 2));
             
-            // Spinner göster
-            $('.spinner-overlay').show();
+            // Spinner oluştur ve göster
+            const $constraintTableBody = $('#constraintTableBody');
+            $constraintTableBody.css('position', 'relative');
+            
+            // Önceki spinner'ları temizle
+            $constraintTableBody.find('.classroom-spinner-overlay').remove();
+            
+            // Spinner oluştur
+            const $spinner = $('<div class="classroom-spinner-overlay"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
+            $constraintTableBody.append($spinner);
+            $spinner.css('display', 'flex');
             
             // AJAX çağrısı ile değişiklikleri kaydet
             $.ajax({
@@ -488,7 +513,7 @@
                 data: JSON.stringify(changes),
                 success: function(response) {
                     // Spinner gizle
-                    $('.spinner-overlay').hide();
+                    $spinner.remove();
                     
                     console.log("Success response:", response);
                     
@@ -501,8 +526,13 @@
                             confirmButtonText: 'OK'
                         });
                         
-                        // Tabloyu yenile
-                        RefreshConstraints();
+                        // UnsavedChanges durumu sıfırla
+                        hasUnsavedChanges = false;
+                        constraintsToAdd = [];
+                        constraintsToRemove = [];
+                        
+                        // Değişiklik uyarısını gizle
+                        $('#constraintChangeAlert').hide();
                     } else {
                         // Başarısız mesajı göster
                         Swal.fire({
@@ -515,23 +545,19 @@
                 },
                 error: function(xhr, status, error) {
                     // Spinner gizle
-                    $('.spinner-overlay').hide();
-                    
-                    // Hata detaylarını logla
-                    console.error("AJAX error details:", {
-                        status: status,
-                        error: error,
-                        response: xhr.responseText,
-                        xhr: xhr
-                    });
+                    $spinner.remove();
                     
                     // XHR yanıtını ve hata detaylarını yazdır
-                    let errorMessage = "An error occurred while saving changes.";
+                    console.error("AJAX hatası:", status, error);
+                    console.error("XHR yanıtı:", xhr.responseText);
+                    
+                    // Hata mesajını hazırla
+                    var errorMessage = "An unknown error occurred. Please try again.";
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMessage = xhr.responseJSON.message;
                     }
                     
-                    // Hata mesajı göster
+                    // Hata mesajını göster
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -577,45 +603,77 @@
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, clear all',
-                cancelButtonText: 'Cancel'
+                confirmButtonText: 'Yes, clear constraints',
+                cancelButtonText: 'No, cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Spinner göster
-                    $('.spinner-overlay').show();
+                    // Spinner oluştur ve göster
+                    const $constraintTableBody = $('#constraintTableBody');
+                    $constraintTableBody.css('position', 'relative');
                     
-                    // AJAX çağrısı ile tüm kısıtlamaları temizle
+                    // Önceki spinner'ları temizle
+                    $constraintTableBody.find('.classroom-spinner-overlay').remove();
+                    
+                    // Spinner oluştur
+                    const $spinner = $('<div class="classroom-spinner-overlay"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div></div>');
+                    $constraintTableBody.append($spinner);
+                    $spinner.css('display', 'flex');
+                    
+                    // API isteği gönder
                     $.ajax({
                         url: '/Constraint/ClearAllClassroomConstraints',
-                        type: 'POST',
+                        type: 'DELETE',
                         contentType: 'application/json',
                         data: JSON.stringify({ ClassroomId: currentClassroomId }),
                         success: function(response) {
                             // Spinner gizle
-                            $('.spinner-overlay').hide();
+                            $spinner.remove();
                             
-                            // Başarılı mesajı göster
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Constraints Cleared',
-                                text: 'All classroom constraints have been cleared successfully.',
-                                confirmButtonText: 'OK'
-                            });
+                            console.log("Success response:", response);
                             
-                            // Tabloyu yenile
-                            RefreshConstraints();
+                            if (response.success) {
+                                // Başarılı mesajı göster
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Constraints Cleared',
+                                    text: 'All classroom constraints have been cleared successfully.',
+                                    confirmButtonText: 'OK'
+                                });
+                                
+                                // UnsavedChanges durumu sıfırla
+                                hasUnsavedChanges = false;
+                                constraintsToAdd = [];
+                                constraintsToRemove = [];
+                                
+                                // Değişiklik uyarısını gizle
+                                $('#constraintChangeAlert').hide();
+                            } else {
+                                // Başarısız mesajı göster
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message || 'An error occurred while clearing constraints.',
+                                    confirmButtonText: 'OK'
+                                });
+                            }
                         },
                         error: function(xhr, status, error) {
                             // Spinner gizle
-                            $('.spinner-overlay').hide();
+                            $spinner.remove();
                             
                             console.error("AJAX hatası:", status, error);
                             
-                            // Hata mesajı göster
+                            // Hata mesajını hazırla
+                            var errorMessage = "An unknown error occurred. Please try again.";
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            
+                            // Hata mesajını göster
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: 'An error occurred while clearing constraints.',
+                                text: errorMessage,
                                 confirmButtonText: 'OK'
                             });
                         }

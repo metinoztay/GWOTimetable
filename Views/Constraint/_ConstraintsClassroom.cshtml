@@ -11,6 +11,9 @@
     List<ClassroomConstraint> classroomConstraints = Model.ClassroomConstraints.ToList();
     List<ClassCourse> classCourses = Model.ClassCourses.ToList();
     List<Course> courses = Model.Courses.ToList();
+    List<Class> classes = Model.Classes.ToList();
+    List<Educator> educators = Model.Educators.ToList();
+    List<Classroom> classrooms = Model.Classrooms.ToList();
 
     int maxLessonCount = 0;
     foreach (var day in Model.Days)
@@ -36,9 +39,21 @@
             if (classCourse != null)
             {
                 var course = courses.FirstOrDefault(c => c.CourseId == classCourse.CourseId);
+                var class_ = classes.FirstOrDefault(c => c.ClassId == classCourse.ClassId);
+                var educator = educators.FirstOrDefault(e => e.EducatorId == classCourse.EducatorId);
+                
                 if (course != null)
                 {
-                    return $"{course.CourseName}";
+                    var info = $"{course.CourseName}";
+                    if (class_ != null)
+                    {
+                        info += $"<br>({class_.ClassName})";
+                    }
+                    if (educator != null)
+                    {
+                        info += $"<br>Teacher: {educator.FirstName} {educator.LastName}";
+                    }
+                    return info;
                 }
                 return $"Course not found for CourseId: {classCourse.CourseId}";
             }
@@ -221,7 +236,7 @@
                                     <td onclick="RemoveConstraintLocal(this, @day.DayId, @lessons[i].LessonId)"
                                         onmouseover="this.style.cursor='pointer'; this.style.opacity='0.8';"
                                         onmouseout="this.style.opacity='1';"
-                                        style="background-color: #ffe6e6; text-align: center; padding: 2px; height: 50px; position: relative;"
+                                        style="background-color: #ffe6e6; text-align: center; padding: 2px; height: 80px; position: relative;"
                                         data-constraint-data="@Json.Serialize(GetConstraintData(day.DayId, lessons[i].LessonId))">
                                         <div style="font-weight: bold; font-size: 0.9em;">Classroom Not Available</div>
                                     </td>
@@ -229,8 +244,8 @@
                                 else if (FindTimetableConstraint(day.DayId, lessons[i].LessonId))
                                 {
                                     // Başka bir constraint var - mavi arkaplan veya farklı renk
-                                    <td style="background-color: #ADD8E6; text-align: center; padding: 2px; height: 50px;">
-                                        <div style="font-weight: bold; font-size: 0.9em;">@GetConstraintInfo(day.DayId, lessons[i].LessonId)</div>
+                                    <td style="background-color: #ADD8E6; text-align: center; vertical-align: middle; padding: 2px; height: 80px;">
+                                        @Html.Raw(GetConstraintInfo(day.DayId, lessons[i].LessonId))
                                     </td>
                                 }
                                 else
@@ -239,13 +254,13 @@
                                     <td onclick="AddConstraintLocal(this, @day.DayId, @lessons[i].LessonId)"
                                         onmouseover="this.style.cursor='pointer'; this.style.backgroundColor='#f5f5f5';"
                                         onmouseout="this.style.backgroundColor='white';"
-                                        style="background-color: white; text-align: center; padding: 2px; height: 50px;">
+                                        style="background-color: white; text-align: center; padding: 2px; height: 80px;">
                                     </td>
                                 }
                             }
                             else
                             {
-                                <td style="background-color: #f0f0f0; text-align: center; height: 50px;"></td>
+                                <td style="background-color: #f0f0f0; text-align: center; height: 80px;"></td>
                             }
                         }
                     }
@@ -641,9 +656,6 @@
                                 title: 'Constraints Cleared',
                                 text: response.message || 'All constraints have been cleared successfully',
                                 confirmButtonText: 'OK'
-                            }).then(() => {
-                                // Reload constraint table to reflect the changes
-                                RefreshConstraints();
                             });
                         } else {
                             // Error message
