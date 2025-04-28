@@ -450,8 +450,8 @@
                 // Kayıtlı bir kısıtlama - silmek için işaretle
                 $(element).attr('data-unsaved', 'true');
                 $(element).attr('data-removed', 'true');
-                $(element).css('background-color', '#f5f5f5');
-                $(element).html('<div style="font-weight: bold; font-size: 0.9em; color: #999;"><i class="fas fa-ban"></i> Marked for Removal</div>');
+                $(element).css('background-color', 'white');
+                $(element).html('');
                 
                 // Click işlevini AddConstraintLocal'a çevir
                 $(element).attr('onclick', `AddConstraintLocal(this, ${dayId}, ${lessonId})`);
