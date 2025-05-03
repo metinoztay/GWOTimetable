@@ -1,0 +1,632 @@
+@model Workspace
+@using System.Text.Json;
+
+@{
+    // Cache frequently accessed data
+    List<Day> days = Model.Days.ToList();
+    List<Lesson> lessons = Model.Lessons.ToList();
+    List<TimetableConstraint> timetableConstraints = Model.TimetableConstraints.ToList();
+    List<ClassConstraint> classConstraints = Model.ClassConstraints.ToList();
+    List<EducatorConstraint> educatorConstraints = Model.EducatorConstraints.ToList();
+    List<ClassroomConstraint> classroomConstraints = Model.ClassroomConstraints.ToList();
+    List<ClassCourse> classCourses = Model.ClassCourses.ToList();
+    List<Course> courses = Model.Courses.ToList();
+
+    int maxLessonCount = 0;
+    foreach (var day in Model.Days)
+    {
+        if (day.LessonCount > maxLessonCount)
+            maxLessonCount = day.LessonCount;
+    }
+
+    bool FindTimetableConstraint(int dayId, int lessonId)
+    {
+        return timetableConstraints.Any(tc => tc.DayId == dayId && tc.LessonId == lessonId) ||
+               educatorConstraints.Any(e => e.DayId == dayId && e.LessonId == lessonId) ||
+               classroomConstraints.Any(cr => cr.DayId == dayId && cr.LessonId == lessonId);
+    }
+
+    string GetConstraintInfo(int dayId, int lessonId)
+    {
+        // Check for timetable constraint
+        var timetableConstraint = timetableConstraints.FirstOrDefault(tc => tc.DayId == dayId && tc.LessonId == lessonId);
+        if (timetableConstraint != null)
+        {
+            var classCourse = classCourses.FirstOrDefault(cc => cc.ClassCourseId == timetableConstraint.ClassCourseId);
+            if (classCourse != null)
+            {
+                var course = courses.FirstOrDefault(c => c.CourseId == classCourse.CourseId);
+                if (course != null)
+                {
+                    return $"{course.CourseName}";
+                }
+                return $"Course not found for CourseId: {classCourse.CourseId}";
+            }
+            return $"ClassCourse not found for ClassCourseId: {timetableConstraint.ClassCourseId}";
+        }
+
+        // Check for educator constraint
+        var educatorConstraint = educatorConstraints.FirstOrDefault(ec => ec.DayId == dayId && ec.LessonId == lessonId);
+        if (educatorConstraint != null)
+        {
+            return "Educator not available";
+        }
+
+        // Check for classroom constraint
+        var classroomConstraint = classroomConstraints.FirstOrDefault(cr => cr.DayId == dayId && cr.LessonId == lessonId);
+        if (classroomConstraint != null)
+        {
+            return "Classroom not available";
+        }
+
+        return "No constraint found";
+    }
+
+    bool FindClassConstraint(int dayId, int lessonId)
+    {
+        return classConstraints.Any(cc => cc.DayId == dayId && cc.LessonId == lessonId);
+    }
+
+    ConstraintDTO GetConstraintData(int dayId, int lessonId)
+    {
+        var constraint = new ConstraintDTO
+        {
+            DayId = dayId,
+            LessonId = lessonId
+        };
+
+        // Check for timetable constraint
+        var timetableConstraint = timetableConstraints.FirstOrDefault(tc => tc.DayId == dayId && tc.LessonId == lessonId);
+        if (timetableConstraint != null)
+        {
+            var classCourse = classCourses.FirstOrDefault(cc => cc.ClassCourseId == timetableConstraint.ClassCourseId);
+            if (classCourse != null)
+            {
+                constraint.ClassCourseId = classCourse.ClassCourseId;
+                constraint.ClassId = classCourse.ClassId;
+                constraint.EducatorId = classCourse.EducatorId;
+                constraint.ClassroomId = classCourse.ClassroomId;
+                constraint.CourseId = classCourse.CourseId;
+            }
+            return constraint;
+        }
+        
+        // Check for educator constraint
+        var educatorConstraint = educatorConstraints.FirstOrDefault(ec => ec.DayId == dayId && ec.LessonId == lessonId);
+        if (educatorConstraint != null)
+        {
+            constraint.EducatorId = educatorConstraint.EducatorId;
+            constraint.ClassCourseId = 0;
+            return constraint;
+        }
+        
+        // Check for classroom constraint
+        var classroomConstraint = classroomConstraints.FirstOrDefault(cr => cr.DayId == dayId && cr.LessonId == lessonId);
+        if (classroomConstraint != null)
+        {
+            constraint.ClassroomId = classroomConstraint.ClassroomId;
+            constraint.ClassCourseId = 0;
+            return constraint;
+        }
+
+        return constraint;
+    }
+    
+    var classCoursesJson = JsonSerializer.Serialize(Model.ClassCourses.Select(cc => new
+    {
+        cc.ClassCourseId,
+        cc.ClassId,
+        cc.EducatorId,
+        cc.ClassroomId,
+        cc.CourseId,
+        cc.Course.CourseName,
+        cc.Course.CourseCode
+    }));
+
+    var coursesJson = JsonSerializer.Serialize(Model.Courses.Select(c => new
+    {
+        c.CourseId,
+        c.CourseName,
+        c.CourseCode
+    }));
+}
+
+<style>
+    .spinner-overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .spinner-container {
+        position: relative;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+
+<div class="spinner-container">
+    <div class="spinner-overlay">
+        <div class="spinner-border" role="status">
+        </div>
+    </div>
+    <div class="card-header d-flex align-items-center">
+        <div class="d-flex w-100 justify-content-between">
+            <h3 class="card-title"><i class="fas fa-calendar-days"></i>&nbsp; Schedule</h3>
+            <span id="constraintChangeAlert" class="badge badge-warning ml-2" style="display: none; font-size: 0.9em; position: absolute; left: 50%; transform: translateX(-50%);">
+                <i class="fas fa-exclamation-triangle"></i>&nbsp; You have unsaved changes
+            </span>
+            <div class="ml-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllConstraints()">
+                    <i class="fa-solid fa-eraser"></i>&nbsp; Clear
+                </button>
+                <button type="button" id="saveConstraintsButton" class="btn btn-outline-success btn-sm" onclick="saveAllChanges()">
+                    <i class="fas fa-save"></i>&nbsp; Save Changes
+                </button>
+                <button type="button" id="cancelChangesButton" class="btn btn-outline-danger btn-sm" onclick="cancelChanges()">
+                    <i class="fas fa-undo"></i>&nbsp; Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <table class="table table-bordered">
+            <tr>
+                <td style="width: 8%; text-align: center; vertical-align: middle;"></td>
+                @foreach (var day in days)
+                {
+                    if (day.LessonCount > 0)
+                    {
+                        <td style="width: calc((100% - 8%) / @days.Count(d => d.LessonCount > 0)); height: 50px; text-align: center; background-color: rgb(255, 255, 255);">
+                            @day.DayOfWeek
+                        </td>
+                    }
+                }
+            </tr>
+
+            @for (int i = 0; i < maxLessonCount; i++)
+            {
+                <tr>
+                    <td style="width: 8%; text-align: center; vertical-align: middle;">
+                        @(lessons[i].StartTime)-@(lessons[i].EndTime)
+                    </td>
+                    @for (int j = 0; j < days.Count; j++)
+                    {
+                        if (days[j].LessonCount > 0)
+                        {
+                            if (i < days[j].LessonCount)
+                            {
+                                bool hasTimetableConstraint = FindTimetableConstraint(days[j].DayId, lessons[i].LessonId);
+                                bool hasClassConstraint = FindClassConstraint(days[j].DayId, lessons[i].LessonId);
+                                string bgColor = "rgb(255, 255, 255)"; // default color
+                                string title = "";
+                                string dataUnsaved = "false";
+
+                                if (hasTimetableConstraint)
+                                {
+                                    title = GetConstraintInfo(days[j].DayId, lessons[i].LessonId);
+                                    bgColor = "#ADD8E6"; // Light blue for course constraints
+                                    
+                                    <td id="cell-@(days[j].DayId)-@(lessons[i].LessonId)" 
+                                        class="constraint-cell" 
+                                        data-day-id="@days[j].DayId" 
+                                        data-lesson-id="@(lessons[i].LessonId)"
+                                        data-unsaved="@dataUnsaved"
+                                        style="width: calc((100% - 8%) / @days.Count(d => d.LessonCount > 0)); height: 80px; text-align: center; vertical-align: middle; background-color: @bgColor; cursor: pointer;"
+                                        title="@title"
+                                        onclick="toggleConstraint(this, @days[j].DayId, @(lessons[i].LessonId))">
+                                        @title
+                                    </td>
+                                }
+                                else if (hasClassConstraint)
+                                {
+                                    title = "Not Available";
+                                    bgColor = "#ffe6e6"; // Light red for closed time slots
+                                    
+                                    <td id="cell-@(days[j].DayId)-@(lessons[i].LessonId)" 
+                                        class="constraint-cell" 
+                                        data-day-id="@days[j].DayId" 
+                                        data-lesson-id="@(lessons[i].LessonId)"
+                                        data-unsaved="@dataUnsaved"
+                                        style="width: calc((100% - 8%) / @days.Count(d => d.LessonCount > 0)); height: 80px; text-align: center; vertical-align: middle; background-color: @bgColor; cursor: pointer;"
+                                        title="@title"
+                                        onclick="toggleConstraint(this, @days[j].DayId, @(lessons[i].LessonId))">
+                                        @title
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td id="cell-@(days[j].DayId)-@(lessons[i].LessonId)" 
+                                        class="constraint-cell" 
+                                        data-day-id="@days[j].DayId" 
+                                        data-lesson-id="@(lessons[i].LessonId)"
+                                        data-unsaved="@dataUnsaved"
+                                        style="width: calc((100% - 8%) / @days.Count(d => d.LessonCount > 0)); height: 80px; text-align: center; vertical-align: middle; background-color: white; cursor: pointer;"
+                                        title="@title"
+                                        onclick="toggleConstraint(this, @days[j].DayId, @(lessons[i].LessonId))"
+                                        onmouseover="this.style.background='#f5f5f5'" 
+                                        onmouseout="this.style.background='white'">
+                                        @title
+                                    </td>
+                                }
+                            }
+                            else
+                            {
+                                <td style="width: calc((100% - 8%) / @days.Count(d => d.LessonCount > 0)); height: 80px; background-color: #ccc; opacity: 0.5; pointer-events: none;"></td>
+                            }
+                        }
+                    }
+                </tr>
+            }
+        </table>
+    </div>
+</div>
+
+<script>
+    var classCoursesData = @Html.Raw(classCoursesJson);
+    var coursesData = @Html.Raw(coursesJson);
+    
+    var constraintsToAdd = [];
+    var constraintsToRemove = [];
+    var hasUnsavedChanges = false;
+
+    function toggleConstraint(element, dayId, lessonId) {
+        console.log("toggleConstraint called for day:", dayId, "lesson:", lessonId);
+        
+        // Check if we have an active "Close" button or a classCourse button
+        const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+        const courseName = selectedConstraintButton ? selectedConstraintButton.data('course-name') : '';
+        
+        if (!selectedConstraintButton) {
+            Swal.fire({
+                toast: true,
+                icon: 'warning',
+                title: 'Please select a course from the options panel first',
+                position: 'top',
+                showConfirmButton: false,
+                timer: 3000
+            });
+            return;
+        }
+        
+        const hasConstraint = $(element).css('background-color') !== 'rgb(255, 255, 255)';
+        
+        if (hasConstraint) {
+            RemoveConstraintLocal(element, dayId, lessonId);
+        } else {
+            AddConstraintLocal(element, dayId, lessonId);
+        }
+    }
+
+    window.AddConstraintLocal = function(element, dayId, lessonId) {
+        console.log("AddConstraintLocal called for day:", dayId, "lesson:", lessonId);
+        
+        // Seçili kısıtlama tipine göre ClassCourseId değerini belirle
+        const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+        const courseId = parseInt(currentCourseId);
+        
+        var constraintData = {
+            DayId: dayId,
+            LessonId: lessonId,
+            ClassCourseId: classCourseId,
+            CourseId: courseId
+        };
+        
+        // Unsaved changes flag'ini aktif et
+        hasUnsavedChanges = true;
+        $('#constraintChangeAlert').show();
+        
+        // Constraint data'sını local değişkene kaydet
+        var existingConstraintIndex = constraintsToRemove.findIndex(item => 
+            item.DayId === dayId && item.LessonId === lessonId && item.CourseId === courseId
+        );
+        
+        if (existingConstraintIndex !== -1) {
+            // Eğer aynı constraint remove listesinde varsa, onu oradan kaldır
+            constraintsToRemove.splice(existingConstraintIndex, 1);
+        } else {
+            // constraintsToAdd listesinde zaten yoksa ekle
+            const existsInAdd = constraintsToAdd.some(item => 
+                item.DayId === dayId && item.LessonId === lessonId && item.CourseId === courseId
+            );
+            
+            if (!existsInAdd) {
+                constraintsToAdd.push(constraintData);
+            }
+        }
+        
+        // Hücreye seçili kısıtlama rengini ve data-unsaved attribute'unu ekle
+        if (classCourseId === 0) {
+            // 'Close' button selected (kırmızı - kapalı hücre)
+            $(element).css('background-color', '#FFD700'); // Unsaved closed cell
+        } else {
+            // Normal course button selected (mavi - ders atama)
+            $(element).css('background-color', '#6FC276'); // Unsaved course cell
+        }
+        
+        $(element).attr('data-unsaved', 'true');
+        
+        // Kısıtlama bilgisini göster
+        if (classCourseId === 0) {
+            $(element).text("Not Available");
+            $(element).attr('title', "Not Available");
+        } else {
+            const courseInfo = selectedConstraintButton.data('course-name');
+            $(element).text(courseInfo);
+            $(element).attr('title', courseInfo);
+        }
+    }
+    
+    window.RemoveConstraintLocal = function(element, dayId, lessonId) {
+        console.log("RemoveConstraintLocal called for day:", dayId, "lesson:", lessonId);
+        
+        var constraintData = {};
+        try {
+            constraintData = {
+                DayId: dayId,
+                LessonId: lessonId,
+                CourseId: parseInt(currentCourseId)
+            };
+        } catch (error) {
+            console.error("Error parsing constraint data:", error);
+            return;
+        }
+        
+        // Unsaved changes flag'ini aktif et
+        hasUnsavedChanges = true;
+        $('#constraintChangeAlert').show();
+        
+        // Local değişkenleri güncelle
+        var existingAddIndex = constraintsToAdd.findIndex(item => 
+            item.DayId === dayId && item.LessonId === lessonId && item.CourseId === constraintData.CourseId
+        );
+        
+        if (existingAddIndex !== -1) {
+            // Eğer aynı constraint add listesinde varsa, onu oradan kaldır
+            constraintsToAdd.splice(existingAddIndex, 1);
+        } else {
+            // constraintsToRemove listesinde zaten yoksa ekle
+            const existsInRemove = constraintsToRemove.some(item => 
+                item.DayId === dayId && item.LessonId === lessonId && item.CourseId === constraintData.CourseId
+            );
+            
+            if (!existsInRemove) {
+                constraintsToRemove.push(constraintData);
+            }
+        }
+        
+        // Hücreyi temizle ve data-unsaved attribute'unu güncelle
+        $(element).css('background-color', 'rgb(255, 255, 255)');
+        $(element).text('');
+        $(element).attr('title', '');
+        $(element).attr('data-unsaved', 'true');
+    }
+    
+    window.saveAllChanges = function() {
+        if (!hasUnsavedChanges) {
+            return;
+        }
+        
+        // Confirm before saving changes
+        Swal.fire({
+            title: 'Save Changes?',
+            text: "Do you want to save all constraint changes?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, save changes!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('.spinner-overlay').css('display', 'flex');
+                
+                var changes = {
+                    ConstraintsToAdd: constraintsToAdd,
+                    ConstraintsToRemove: constraintsToRemove,
+                    CourseId: parseInt(currentCourseId)
+                };
+                
+                $.ajax({
+                    url: '/Constraint/SaveAllCourseConstraints',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(changes),
+                    success: function(response) {
+                        $('.spinner-overlay').hide();
+                        
+                        // Reset local tracking
+                        constraintsToAdd = [];
+                        constraintsToRemove = [];
+                        hasUnsavedChanges = false;
+                        $('#constraintChangeAlert').hide();
+                        
+                        // Update UI
+                        $('[data-unsaved="true"]').each(function() {
+                            $(this).attr('data-unsaved', 'false');
+                            
+                            // Set the correct background color for saved cells
+                            if ($(this).css('background-color') === 'rgb(111, 194, 118)') { // Unsaved course
+                                $(this).css('background-color', '#ADD8E6'); // Saved course
+                            } else if ($(this).css('background-color') === 'rgb(255, 215, 0)') { // Unsaved closed
+                                $(this).css('background-color', '#ffe6e6'); // Saved closed
+                            } else if ($(this).css('background-color') === 'rgb(255, 255, 255)') {
+                                // Cell was cleared, keep it white
+                            }
+                        });
+                        
+                        Swal.fire({
+                            toast: true,
+                            icon: 'success',
+                            title: 'Changes saved successfully!',
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        $('.spinner-overlay').hide();
+                        console.error("AJAX hatası:", status, error);
+                        
+                        // XHR yanıtını ve hata detaylarını yazdır
+                        console.error("XHR response:", xhr.responseText);
+                        
+                        var errorMessage = "An unknown error occurred while saving changes.";
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errorMessage,
+                        });
+                    }
+                });
+            }
+        });
+    }
+    
+    window.cancelChanges = function() {
+        if (!hasUnsavedChanges) {
+            return;
+        }
+        
+        Swal.fire({
+            title: 'Cancel Changes?',
+            text: "All unsaved changes will be lost. Do you want to continue?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, cancel changes'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log("Değişiklikler iptal ediliyor");
+                
+                // constraintsToAdd listesindeki tüm hücreler için değişiklikleri geri al
+                constraintsToAdd.forEach(function(constraint) {
+                    var cell = $(`#cell-${constraint.DayId}-${constraint.LessonId}`);
+                    cell.css('background-color', 'rgb(255, 255, 255)');
+                    cell.text('');
+                    cell.attr('title', '');
+                    cell.attr('data-unsaved', 'false');
+                });
+                
+                // constraintsToRemove listesindeki tüm hücreler için orijinal değerleri geri yükle
+                constraintsToRemove.forEach(function(constraint) {
+                    var cell = $(`#cell-${constraint.DayId}-${constraint.LessonId}`);
+                    
+                    // Determine the constraint type (you might need additional data to determine this correctly)
+                    var classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
+                    
+                    if (classCourseId === 0) {
+                        cell.css('background-color', '#ffe6e6'); // Closed cell
+                        cell.text('Not Available');
+                        cell.attr('title', 'Not Available');
+                    } else {
+                        cell.css('background-color', '#ADD8E6'); // Course cell
+                        var courseInfo = selectedConstraintButton.data('course-name');
+                        cell.text(courseInfo);
+                        cell.attr('title', courseInfo);
+                    }
+                    
+                    cell.attr('data-unsaved', 'false');
+                });
+                
+                // Reset tracking variables
+                constraintsToAdd = [];
+                constraintsToRemove = [];
+                hasUnsavedChanges = false;
+                $('#constraintChangeAlert').hide();
+                
+                Swal.fire({
+                    toast: true,
+                    icon: 'info',
+                    title: 'Changes canceled',
+                    position: 'top',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        });
+    }
+
+    window.clearAllConstraints = function() {
+        Swal.fire({
+            title: 'Clear All Course Constraints?',
+            text: "This will remove all 'Close' constraints for this course. This action cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, clear all constraints'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('.spinner-overlay').css('display', 'flex');
+                
+                var courseData = {
+                    CourseId: parseInt(currentCourseId)
+                };
+                
+                $.ajax({
+                    url: '/Constraint/ClearAllCourseConstraints',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(courseData),
+                    success: function(response) {
+                        $('.spinner-overlay').hide();
+                        
+                        // Reset all constraint cells
+                        $('.constraint-cell').each(function() {
+                            $(this).css('background-color', 'rgb(255, 255, 255)');
+                            $(this).text('');
+                            $(this).attr('title', '');
+                            $(this).attr('data-unsaved', 'false');
+                        });
+                        
+                        // Reset tracking variables
+                        constraintsToAdd = [];
+                        constraintsToRemove = [];
+                        hasUnsavedChanges = false;
+                        $('#constraintChangeAlert').hide();
+                        
+                        Swal.fire({
+                            toast: true,
+                            icon: 'success',
+                            title: 'All constraints cleared successfully!',
+                            position: 'top',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        $('.spinner-overlay').hide();
+                        console.error("AJAX Error:", status, error);
+                        
+                        var errorMessage = "An unknown error occurred while clearing constraints.";
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errorMessage,
+                        });
+                    }
+                });
+            }
+        });
+    }
+</script>

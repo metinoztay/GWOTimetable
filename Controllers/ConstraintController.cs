@@ -204,6 +204,74 @@ namespace GWOTimetable.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> GetConstraintsForCourse([FromBody] ClassCourse classCourse)
+        {
+            try
+            {
+                if (classCourse == null || classCourse.CourseId == 0)
+                {
+                    return BadRequest("Invalid course data");
+                }
+
+                Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+                Workspace workspace = new Workspace();
+                if (classCourse.ClassCourseId == 0)
+                {
+                    workspace = await _context.Workspaces
+                    .Include(w => w.Days)
+                    .Include(w => w.Lessons)
+                    .Include(w => w.ClassCourses.Where(c => c.CourseId == classCourse.CourseId))
+                        .ThenInclude(c => c.TimetableConstraints)
+                    .Include(w => w.ClassCourses)
+                        .ThenInclude(c => c.Course)
+                    .Include(w => w.ClassCourses)
+                        .ThenInclude(c => c.Class)
+                    .Include(w => w.Courses)
+                    .Include(w => w.Classes)
+                    .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);
+                }
+                else
+                {
+                    var existingClassCourse = await _context.ClassCourses
+                        .FirstOrDefaultAsync(cc => cc.ClassCourseId == classCourse.ClassCourseId);
+
+                    if (existingClassCourse == null)
+                    {
+                        return NotFound("Class course not found");
+                    }
+
+                    workspace = await _context.Workspaces
+                    .Include(w => w.Days)
+                    .Include(w => w.Lessons)
+                    .Include(w => w.ClassCourses.Where(c => c.CourseId == existingClassCourse.CourseId))
+                        .ThenInclude(c => c.TimetableConstraints)
+                    .Include(w => w.ClassCourses)
+                        .ThenInclude(c => c.Course)
+                    .Include(w => w.ClassCourses)
+                        .ThenInclude(c => c.Class)
+                    .Include(w => w.Courses)
+                    .Include(w => w.Classes)
+                    .Include(w => w.ClassroomConstraints.Where(cr => cr.ClassroomId == existingClassCourse.ClassroomId))
+                    .Include(w => w.EducatorConstraints.Where(e => e.EducatorId == existingClassCourse.EducatorId))
+                    .Include(w => w.ClassConstraints.Where(c => c.ClassId == existingClassCourse.ClassId))
+                    .FirstOrDefaultAsync(w => w.WorkspaceId == selectedWorkspaceId);
+                }
+
+                if (workspace == null)
+                {
+                    return NotFound("Workspace not found");
+                }
+
+                return PartialView("_ConstraintsCourse", workspace);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while loading course constraints", error = ex.Message });
+            }
+        }
+
+        [HttpPost]
         public async Task<IActionResult> AddConstraintForEducator([FromBody] ConstraintDTO constraint)
         {
             Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
@@ -1225,6 +1293,152 @@ namespace GWOTimetable.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = $"Error clearing constraints: {ex.Message}" });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveAllCourseConstraints([FromBody] ConstraintChangesDTO changes)
+        {
+            try
+            {
+                if (changes == null)
+                {
+                    return BadRequest("Invalid data");
+                }
+
+                Guid workspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+                using (var transaction = await _context.Database.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        // Add new constraints
+                        foreach (var constraintDto in changes.ConstraintsToAdd)
+                        {
+                            if (constraintDto.ClassCourseId == 0)
+                            {
+                                // Create a "Close" constraint for a course
+                                var newConstraint = new ClassConstraint
+                                {
+                                    DayId = constraintDto.DayId,
+                                    LessonId = constraintDto.LessonId,
+                                    ClassId = constraintDto.ClassId, // Might be 0 for pure course constraints
+                                    WorkspaceId = workspaceId
+                                };
+                                await _context.ClassConstraints.AddAsync(newConstraint);
+                            }
+                            else
+                            {
+                                // Create a timetable constraint for a specific course
+                                var newConstraint = new TimetableConstraint
+                                {
+                                    DayId = constraintDto.DayId,
+                                    LessonId = constraintDto.LessonId,
+                                    ClassCourseId = constraintDto.ClassCourseId,
+                                    WorkspaceId = workspaceId
+                                };
+                                await _context.TimetableConstraints.AddAsync(newConstraint);
+                            }
+                        }
+
+                        // Remove existing constraints
+                        foreach (var constraintDto in changes.ConstraintsToRemove)
+                        {
+                            // Try to find and remove timetable constraints
+                            var existingTimetableConstraint = await _context.TimetableConstraints
+                                .FirstOrDefaultAsync(tc => tc.DayId == constraintDto.DayId &&
+                                                        tc.LessonId == constraintDto.LessonId &&
+                                                        tc.WorkspaceId == workspaceId);
+
+                            if (existingTimetableConstraint != null)
+                            {
+                                _context.TimetableConstraints.Remove(existingTimetableConstraint);
+                            }
+
+                            // Try to find and remove class constraints
+                            var existingClassConstraint = await _context.ClassConstraints
+                                .FirstOrDefaultAsync(cc => cc.DayId == constraintDto.DayId &&
+                                                        cc.LessonId == constraintDto.LessonId &&
+                                                        cc.WorkspaceId == workspaceId);
+
+                            if (existingClassConstraint != null)
+                            {
+                                _context.ClassConstraints.Remove(existingClassConstraint);
+                            }
+                        }
+
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return Ok(new { message = "Constraints saved successfully" });
+                    }
+                    catch (DbUpdateConcurrencyException ex)
+                    {
+                        // Handle optimistic concurrency exception
+                        await transaction.RollbackAsync();
+                        return StatusCode(409, new { message = "Conflict while saving constraints. Please refresh and try again.", error = ex.Message });
+                    }
+                    catch (Exception ex)
+                    {
+                        // Rollback on error
+                        await transaction.RollbackAsync();
+                        throw ex;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while saving constraints", error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ClearAllCourseConstraints([FromBody] CourseDTO courseData)
+        {
+            try
+            {
+                if (courseData == null || courseData.CourseId == 0)
+                {
+                    return BadRequest("Invalid course data");
+                }
+
+                Guid workspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+                // Get all ClassCourses for this course
+                var classCourses = await _context.ClassCourses
+                    .Where(cc => cc.CourseId == courseData.CourseId && cc.WorkspaceId == workspaceId)
+                    .ToListAsync();
+
+                // Get all ClassCourseIds
+                var classCourseIds = classCourses.Select(cc => cc.ClassCourseId).ToList();
+
+                using (var transaction = await _context.Database.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        // Delete all timetable constraints for the course
+                        var timetableConstraints = await _context.TimetableConstraints
+                            .Where(tc => classCourseIds.Contains(tc.ClassCourseId) && tc.WorkspaceId == workspaceId)
+                            .ToListAsync();
+
+                        _context.TimetableConstraints.RemoveRange(timetableConstraints);
+
+                        // Save the changes
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return Ok(new { message = "All course constraints cleared successfully" });
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        throw ex;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while clearing course constraints", error = ex.Message });
             }
         }
     }

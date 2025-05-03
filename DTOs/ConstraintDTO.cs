@@ -1,4 +1,3 @@
-
 namespace GWOTimetable.Models;
 
 public class ConstraintDTO
@@ -15,5 +14,7 @@ public class ConstraintDTO
     public int ClassId { get; set; }
 
     public int ClassroomId { get; set; }
+
+    public int CourseId { get; set; }
 
 }
