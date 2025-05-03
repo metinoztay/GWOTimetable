@@ -139,7 +139,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: rgba(255, 255, 255, 0.8);
+        background-color: rgba(0, 0, 0, 0.5);
         z-index: 1000;
         justify-content: center;
         align-items: center;
@@ -304,16 +304,24 @@
             DayId: dayId,
             LessonId: lessonId,
             ClassCourseId: classCourseId,
-            CourseId: courseId
+            CourseId: courseId,
+            ClassId: 0 // For course constraints, ClassId is 0
         };
+        
+        console.log("Created constraint data:", constraintData);
         
         // Unsaved changes flag'ini aktif et
         hasUnsavedChanges = true;
         $('#constraintChangeAlert').show();
+        $("#saveConstraintsButton").prop("disabled", false);
+        $("#cancelChangesButton").prop("disabled", false);
         
         // Constraint data'sını local değişkene kaydet
         var existingConstraintIndex = constraintsToRemove.findIndex(item => 
-            item.DayId === dayId && item.LessonId === lessonId && item.CourseId === courseId
+            item.DayId === dayId && 
+            item.LessonId === lessonId && 
+            item.CourseId === courseId &&
+            item.ClassCourseId === classCourseId
         );
         
         if (existingConstraintIndex !== -1) {
@@ -322,7 +330,10 @@
         } else {
             // constraintsToAdd listesinde zaten yoksa ekle
             const existsInAdd = constraintsToAdd.some(item => 
-                item.DayId === dayId && item.LessonId === lessonId && item.CourseId === courseId
+                item.DayId === dayId && 
+                item.LessonId === lessonId && 
+                item.CourseId === courseId &&
+                item.ClassCourseId === classCourseId
             );
             
             if (!existsInAdd) {
@@ -377,11 +388,20 @@
         
         var constraintData = {};
         try {
-            constraintData = {
-                DayId: dayId,
-                LessonId: lessonId,
-                CourseId: parseInt(currentCourseId)
-            };
+            // If there's an existing constraint data in the element, parse it
+            if ($(element).attr('data-constraint-data')) {
+                constraintData = JSON.parse($(element).attr('data-constraint-data'));
+            } else {
+                // Otherwise create a basic constraint data object
+                constraintData = {
+                    DayId: dayId,
+                    LessonId: lessonId,
+                    CourseId: parseInt(currentCourseId),
+                    ClassCourseId: $(element).hasClass('close-constraint') ? 0 : parseInt($(element).attr('data-classcourse-id') || '0'),
+                    ClassId: 0 // For course constraints, ClassId is 0
+                };
+            }
+            console.log("Constraint data to remove:", constraintData);
         } catch (error) {
             console.error("Error parsing constraint data:", error);
             return;
@@ -390,19 +410,27 @@
         // Unsaved changes flag'ini aktif et
         hasUnsavedChanges = true;
         $('#constraintChangeAlert').show();
+        $("#saveConstraintsButton").prop("disabled", false);
+        $("#cancelChangesButton").prop("disabled", false);
         
         // Local değişkenleri güncelle
         var existingAddIndex = constraintsToAdd.findIndex(item => 
-            item.DayId === dayId && item.LessonId === lessonId && item.CourseId === constraintData.CourseId
+            item.DayId === dayId && 
+            item.LessonId === lessonId && 
+            item.CourseId === constraintData.CourseId &&
+            item.ClassCourseId === constraintData.ClassCourseId
         );
         
         if (existingAddIndex !== -1) {
-            // Eğer aynı constraint add listesinde varsa, onu oradan kaldır
+            // Eğer constraint henüz ekleme listesindeyse, onu oradan kaldır
             constraintsToAdd.splice(existingAddIndex, 1);
         } else {
             // constraintsToRemove listesinde zaten yoksa ekle
             const existsInRemove = constraintsToRemove.some(item => 
-                item.DayId === dayId && item.LessonId === lessonId && item.CourseId === constraintData.CourseId
+                item.DayId === dayId && 
+                item.LessonId === lessonId && 
+                item.CourseId === constraintData.CourseId &&
+                item.ClassCourseId === constraintData.ClassCourseId
             );
             
             if (!existsInRemove) {
@@ -410,24 +438,33 @@
             }
         }
         
-        // Hücreyi temizle ve data-unsaved attribute'unu güncelle
+        // Çift tıklama ile constraint'i kaldır
+        $(element).removeAttr('title').text('');
         $(element).css('background-color', 'white');
-        $(element).text('');
-        $(element).attr('title', '');
-        $(element).attr('data-unsaved', 'true');
         
-        // Tekrar tek tıklama ile eklenebilmesi için event handler ekle
+        // Unsaved attribute'unu kaldır
+        $(element).removeAttr('data-unsaved');
+        
+        // Hover efektini geri ekle
+        $(element).on("mouseover", function() {
+            $(this).css('background-color', '#f5f5f5');
+        }).on("mouseout", function() {
+            $(this).css('background-color', 'white');
+        });
+        
+        // Artık tek tıklama ile eklenebilmesi için event handler ekle
         $(element).off("dblclick");
-        $(element).off("click").on("click", function() {
+        $(element).on("click", function() {
             AddConstraintLocal(this, dayId, lessonId);
         });
         
-        // Hover effect'i geri getir
-        $(element).on("mouseover", function() {
-            this.style.background = '#f5f5f5';
-        }).on("mouseout", function() {
-            this.style.background = 'white';
-        });
+        // Kontrol et, eğer constraintsToAdd ve constraintsToRemove boşsa "You have unsaved changes" yazısını kaldır
+        if (constraintsToAdd.length === 0 && constraintsToRemove.length === 0) {
+            hasUnsavedChanges = false;
+            $("#constraintChangeAlert").hide();
+            $("#saveConstraintsButton").prop("disabled", true);
+            $("#cancelChangesButton").prop("disabled", true);
+        }
     }
     
     window.saveAllChanges = function() {
@@ -435,71 +472,102 @@
             return;
         }
         
-        // Confirm before saving changes
-        Swal.fire({
-            title: 'Save Changes?',
-            text: "Do you want to save all constraint changes?",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, save changes!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $('.spinner-overlay').css('display', 'flex');
+        // Show loading spinner
+        $('.spinner-overlay').css('display', 'flex');
+        
+        // Prepare the constraint data to send to the server
+        var processedConstraintsToAdd = constraintsToAdd.map(function(constraint) {
+            return {
+                DayId: constraint.DayId,
+                LessonId: constraint.LessonId,
+                ClassCourseId: constraint.ClassCourseId || 0,
+                CourseId: parseInt(currentCourseId),
+                ClassId: 0 // For course constraints, ClassId is 0
+            };
+        });
+        
+        var processedConstraintsToRemove = constraintsToRemove.map(function(constraint) {
+            return {
+                DayId: constraint.DayId,
+                LessonId: constraint.LessonId,
+                ClassCourseId: constraint.ClassCourseId || 0,
+                CourseId: parseInt(currentCourseId),
+                ClassId: 0 // For course constraints, ClassId is 0
+            };
+        });
+        
+        var changes = {
+            CourseId: parseInt(currentCourseId), 
+            ConstraintsToAdd: processedConstraintsToAdd,
+            ConstraintsToRemove: processedConstraintsToRemove
+        };
+        
+        console.log("Course constraints being saved:", JSON.stringify(changes));
+        
+        $.ajax({
+            url: '/Constraint/SaveAllCourseConstraints',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(changes),
+            success: function(response) {
+                $('.spinner-overlay').hide();
+                console.log("Server response:", response);
                 
-                var changes = {
-                    ConstraintsToAdd: constraintsToAdd,
-                    ConstraintsToRemove: constraintsToRemove,
-                    CourseId: parseInt(currentCourseId)
-                };
-                
-                $.ajax({
-                    url: '/Constraint/SaveAllCourseConstraints',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(changes),
-                    success: function(response) {
-                        $('.spinner-overlay').hide();
-                        
-                        // Reset local tracking
-                        constraintsToAdd = [];
-                        constraintsToRemove = [];
-                        hasUnsavedChanges = false;
-                        $('#constraintChangeAlert').hide();
-                        
-                        // Update UI
-                        $('[data-unsaved="true"]').each(function() {
-                            $(this).attr('data-unsaved', 'false');
-                        });
-                        
-                        Swal.fire({
-                            toast: true,
-                            icon: 'success',
-                            title: 'Changes saved successfully!',
-                            position: 'top',
-                            showConfirmButton: false,
-                            timer: 3000
-                        });
-                    },
-                    error: function(xhr, status, error) {
-                        $('.spinner-overlay').hide();
-                        console.error("AJAX hatası:", status, error);
-                        
-                        // XHR yanıtını ve hata detaylarını yazdır
-                        console.error("XHR response:", xhr.responseText);
-                        
-                        var errorMessage = "An unknown error occurred while saving changes.";
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
+                if (response && response.success) {
+                    // Clear the constraints lists
+                    constraintsToAdd = [];
+                    constraintsToRemove = [];
+                    hasUnsavedChanges = false;
+                    
+                    // Hide unsaved changes message and disable buttons
+                    $("#constraintChangeAlert").hide();
+                    $("#saveConstraintsButton").prop("disabled", true);
+                    $("#cancelChangesButton").prop("disabled", true);
+                    
+                    // Refresh the page to show the latest constraints
+                    Swal.fire({
+                        toast: true,
+                        icon: 'success',
+                        title: 'Changes saved successfully',
+                        position: 'top',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        willClose: () => {
+                            // Reload the page to show the updated constraints
+                            window.location.reload();
                         }
-                        
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: errorMessage,
-                        });
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response && response.message ? response.message : 'An error occurred while saving changes',
+                        showConfirmButton: true
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                $('.spinner-overlay').hide();
+                console.error("Error saving changes:", error);
+                console.error("Server response:", xhr.responseText);
+                
+                let errorMessage = 'There was a problem saving your changes. Please try again.';
+                try {
+                    if (xhr.responseJSON) {
+                        errorMessage = xhr.responseJSON.message || xhr.responseJSON.error || errorMessage;
+                    } else if (xhr.responseText) {
+                        const parsed = JSON.parse(xhr.responseText);
+                        errorMessage = parsed.message || parsed.error || errorMessage;
                     }
+                } catch (e) {
+                    console.error("Error parsing server response:", e);
+                }
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error Saving Changes',
+                    text: errorMessage,
+                    showConfirmButton: true
                 });
             }
         });
