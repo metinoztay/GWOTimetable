@@ -225,7 +225,7 @@
                                         data-unsaved="@dataUnsaved"
                                         style="width: calc((100% - 8%) / @days.Count(d => d.LessonCount > 0)); height: 80px; text-align: center; vertical-align: middle; background-color: @bgColor; cursor: pointer;"
                                         title="@title"
-                                        onclick="toggleConstraint(this, @days[j].DayId, @(lessons[i].LessonId))">
+                                        ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @(lessons[i].LessonId))">
                                         @title
                                     </td>
                                 }
@@ -241,7 +241,7 @@
                                         data-unsaved="@dataUnsaved"
                                         style="width: calc((100% - 8%) / @days.Count(d => d.LessonCount > 0)); height: 80px; text-align: center; vertical-align: middle; background-color: @bgColor; cursor: pointer;"
                                         title="@title"
-                                        onclick="toggleConstraint(this, @days[j].DayId, @(lessons[i].LessonId))">
+                                        ondblclick="RemoveConstraintLocal(this, @days[j].DayId, @(lessons[i].LessonId))">
                                         @title
                                     </td>
                                 }
@@ -254,7 +254,7 @@
                                         data-unsaved="@dataUnsaved"
                                         style="width: calc((100% - 8%) / @days.Count(d => d.LessonCount > 0)); height: 80px; text-align: center; vertical-align: middle; background-color: white; cursor: pointer;"
                                         title="@title"
-                                        onclick="toggleConstraint(this, @days[j].DayId, @(lessons[i].LessonId))"
+                                        onclick="AddConstraintLocal(this, @days[j].DayId, @(lessons[i].LessonId))"
                                         onmouseover="this.style.background='#f5f5f5'" 
                                         onmouseout="this.style.background='white'">
                                         @title
@@ -281,12 +281,8 @@
     var constraintsToRemove = [];
     var hasUnsavedChanges = false;
 
-    function toggleConstraint(element, dayId, lessonId) {
-        console.log("toggleConstraint called for day:", dayId, "lesson:", lessonId);
-        
-        // Check if we have an active "Close" button or a classCourse button
-        const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
-        const courseName = selectedConstraintButton ? selectedConstraintButton.data('course-name') : '';
+    window.AddConstraintLocal = function(element, dayId, lessonId) {
+        console.log("AddConstraintLocal called for day:", dayId, "lesson:", lessonId);
         
         if (!selectedConstraintButton) {
             Swal.fire({
@@ -299,18 +295,6 @@
             });
             return;
         }
-        
-        const hasConstraint = $(element).css('background-color') !== 'rgb(255, 255, 255)';
-        
-        if (hasConstraint) {
-            RemoveConstraintLocal(element, dayId, lessonId);
-        } else {
-            AddConstraintLocal(element, dayId, lessonId);
-        }
-    }
-
-    window.AddConstraintLocal = function(element, dayId, lessonId) {
-        console.log("AddConstraintLocal called for day:", dayId, "lesson:", lessonId);
         
         // Seçili kısıtlama tipine göre ClassCourseId değerini belirle
         const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
@@ -349,10 +333,10 @@
         // Hücreye seçili kısıtlama rengini ve data-unsaved attribute'unu ekle
         if (classCourseId === 0) {
             // 'Close' button selected (kırmızı - kapalı hücre)
-            $(element).css('background-color', '#FFD700'); // Unsaved closed cell
+            $(element).css('background-color', '#FFEE8C'); // Closed cell color (consistent with saved state)
         } else {
             // Normal course button selected (mavi - ders atama)
-            $(element).css('background-color', '#6FC276'); // Unsaved course cell
+            $(element).css('background-color', '#ADD8E6'); // Course cell color (consistent with saved state)
         }
         
         $(element).attr('data-unsaved', 'true');
@@ -366,6 +350,26 @@
             $(element).text(courseInfo);
             $(element).attr('title', courseInfo);
         }
+        
+        // Artık çift tıklama ile silinebilmesi için event handler ekle
+        $(element).prop("onclick", null).off("click");
+        $(element).off("dblclick").on("dblclick", function() {
+            RemoveConstraintLocal(this, dayId, lessonId);
+        });
+        
+        // Hover effect'i tamamen kaldır
+        $(element).off("mouseover").off("mouseout");
+        // Inline style olarak hover etkisini kaldırmak için
+        $(element).hover(function(){
+            // Hover in - hiçbir şey yapma
+        }, function(){
+            // Hover out - hiçbir şey yapma
+        });
+        
+        // Doğrudan element özniteliklerini de kaldır
+        $(element).removeAttr("onmouseover").removeAttr("onmouseout");
+        
+        // Hover effect'i kaldır
     }
     
     window.RemoveConstraintLocal = function(element, dayId, lessonId) {
@@ -407,10 +411,23 @@
         }
         
         // Hücreyi temizle ve data-unsaved attribute'unu güncelle
-        $(element).css('background-color', 'rgb(255, 255, 255)');
+        $(element).css('background-color', 'white');
         $(element).text('');
         $(element).attr('title', '');
         $(element).attr('data-unsaved', 'true');
+        
+        // Tekrar tek tıklama ile eklenebilmesi için event handler ekle
+        $(element).off("dblclick");
+        $(element).off("click").on("click", function() {
+            AddConstraintLocal(this, dayId, lessonId);
+        });
+        
+        // Hover effect'i geri getir
+        $(element).on("mouseover", function() {
+            this.style.background = '#f5f5f5';
+        }).on("mouseout", function() {
+            this.style.background = 'white';
+        });
     }
     
     window.saveAllChanges = function() {
@@ -454,15 +471,6 @@
                         // Update UI
                         $('[data-unsaved="true"]').each(function() {
                             $(this).attr('data-unsaved', 'false');
-                            
-                            // Set the correct background color for saved cells
-                            if ($(this).css('background-color') === 'rgb(111, 194, 118)') { // Unsaved course
-                                $(this).css('background-color', '#ADD8E6'); // Saved course
-                            } else if ($(this).css('background-color') === 'rgb(255, 215, 0)') { // Unsaved closed
-                                $(this).css('background-color', '#ffe6e6'); // Saved closed
-                            } else if ($(this).css('background-color') === 'rgb(255, 255, 255)') {
-                                // Cell was cleared, keep it white
-                            }
                         });
                         
                         Swal.fire({
@@ -517,7 +525,7 @@
                 // constraintsToAdd listesindeki tüm hücreler için değişiklikleri geri al
                 constraintsToAdd.forEach(function(constraint) {
                     var cell = $(`#cell-${constraint.DayId}-${constraint.LessonId}`);
-                    cell.css('background-color', 'rgb(255, 255, 255)');
+                    cell.css('background-color', 'white');
                     cell.text('');
                     cell.attr('title', '');
                     cell.attr('data-unsaved', 'false');
@@ -527,7 +535,7 @@
                 constraintsToRemove.forEach(function(constraint) {
                     var cell = $(`#cell-${constraint.DayId}-${constraint.LessonId}`);
                     
-                    // Determine the constraint type (you might need additional data to determine this correctly)
+                    // Determine the constraint type based on ClassCourseId
                     var classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
                     
                     if (classCourseId === 0) {
