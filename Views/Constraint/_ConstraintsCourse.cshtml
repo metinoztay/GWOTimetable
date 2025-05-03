@@ -32,17 +32,8 @@
         var timetableConstraint = timetableConstraints.FirstOrDefault(tc => tc.DayId == dayId && tc.LessonId == lessonId);
         if (timetableConstraint != null)
         {
-            var classCourse = classCourses.FirstOrDefault(cc => cc.ClassCourseId == timetableConstraint.ClassCourseId);
-            if (classCourse != null)
-            {
-                var course = courses.FirstOrDefault(c => c.CourseId == classCourse.CourseId);
-                if (course != null)
-                {
-                    return $"{course.CourseName}";
-                }
-                return $"Course not found for CourseId: {classCourse.CourseId}";
-            }
-            return $"ClassCourse not found for ClassCourseId: {timetableConstraint.ClassCourseId}";
+            // For course constraints, always return "Course Not Available" as requested
+            return "Course Not Available";
         }
 
         // Check for educator constraint
@@ -344,23 +335,19 @@
         // Hücreye seçili kısıtlama rengini ve data-unsaved attribute'unu ekle
         if (classCourseId === 0) {
             // 'Close' button selected (kırmızı - kapalı hücre)
-            $(element).css('background-color', '#FFEE8C'); // Closed cell color (consistent with saved state)
+            $(element).css('background-color', '#FFEE8C'); // Gold color for unsaved close constraints
+            $(element).addClass('close-constraint');
         } else {
             // Normal course button selected (mavi - ders atama)
-            $(element).css('background-color', '#ADD8E6'); // Course cell color (consistent with saved state)
+            $(element).css('background-color', '#6FC276'); // Green color for unsaved course constraints
+            $(element).removeClass('close-constraint');
         }
         
         $(element).attr('data-unsaved', 'true');
         
-        // Kısıtlama bilgisini göster
-        if (classCourseId === 0) {
-            $(element).text("Not Available");
-            $(element).attr('title', "Not Available");
-        } else {
-            const courseInfo = selectedConstraintButton.data('course-name');
-            $(element).text(courseInfo);
-            $(element).attr('title', courseInfo);
-        }
+        // Kısıtlama bilgisini göster - Always show "Course Not Available" for all constraint types
+        $(element).text("Closed.");
+        $(element).attr('title', "Closed.");
         
         // Artık çift tıklama ile silinebilmesi için event handler ekle
         $(element).prop("onclick", null).off("click");
@@ -524,18 +511,25 @@
                     $("#saveConstraintsButton").prop("disabled", true);
                     $("#cancelChangesButton").prop("disabled", true);
                     
-                    // Refresh the page to show the latest constraints
+                    // Update the UI to reflect saved state
+                    $('[data-unsaved="true"]').each(function() {
+                        $(this).attr('data-unsaved', 'false');
+                        // Update cell colors to saved state
+                        if ($(this).hasClass('close-constraint')) {
+                            $(this).css('background-color', '#ffe6e6'); // Saved close constraint color
+                        } else {
+                            $(this).css('background-color', '#ADD8E6'); // Saved course constraint color
+                        }
+                    });
+                    
+                    // Show success message in the center of the screen
                     Swal.fire({
-                        toast: true,
                         icon: 'success',
-                        title: 'Changes saved successfully',
-                        position: 'top',
+                        title: 'Success',
+                        text: 'Constraints saved successfully',
                         showConfirmButton: false,
                         timer: 2000,
-                        willClose: () => {
-                            // Reload the page to show the updated constraints
-                            window.location.reload();
-                        }
+                        position: 'center'
                     });
                 } else {
                     Swal.fire({
@@ -608,13 +602,12 @@
                     
                     if (classCourseId === 0) {
                         cell.css('background-color', '#ffe6e6'); // Closed cell
-                        cell.text('Not Available');
-                        cell.attr('title', 'Not Available');
+                        cell.text('Course Not Available');
+                        cell.attr('title', 'Course Not Available');
                     } else {
                         cell.css('background-color', '#ADD8E6'); // Course cell
-                        var courseInfo = selectedConstraintButton.data('course-name');
-                        cell.text(courseInfo);
-                        cell.attr('title', courseInfo);
+                        cell.text('Course Not Available');
+                        cell.attr('title', 'Course Not Available');
                     }
                     
                     cell.attr('data-unsaved', 'false');
