@@ -72,7 +72,7 @@ namespace GWOTimetable.Controllers
                 {
                     placements = await _context.TimetablePlacements
                         .Where(p => p.WorkspaceId == selectedWorkspaceId && p.EducatorFullName == educatorName)
-                        .OrderBy(p => p.DayOfWeek)
+                        .OrderBy(p => p.DayId) // DayOfWeek yerine DayId'ye göre sıralama
                         .ThenBy(p => p.LessonNumber)
                         .ToListAsync();
                 }
@@ -84,7 +84,7 @@ namespace GWOTimetable.Controllers
                 {
                     placements = await _context.TimetablePlacements
                         .Where(p => p.WorkspaceId == selectedWorkspaceId && p.ClassName == className)
-                        .OrderBy(p => p.DayOfWeek)
+                        .OrderBy(p => p.DayId) // DayOfWeek yerine DayId'ye göre sıralama
                         .ThenBy(p => p.LessonNumber)
                         .ToListAsync();
                 }

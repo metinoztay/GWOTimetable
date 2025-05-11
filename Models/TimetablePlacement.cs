@@ -9,6 +9,8 @@ public partial class TimetablePlacement
 
     public Guid WorkspaceId { get; set; }
 
+    public int DayId { get; set; }
+
     public string DayOfWeek { get; set; } = null!;
 
     public string DayShortName { get; set; } = null!;
