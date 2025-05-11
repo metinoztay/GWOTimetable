@@ -1,0 +1,303 @@
+@using System.Security.Claims
+@{
+    ViewBag.Title = "Timetable Details";
+    ViewBag.MenuHead = "Management";
+    ViewBag.Controller = "Timetable";
+    ViewBag.Action = "Management";
+    
+    var timetable = ViewBag.Timetable as Timetable;
+    var viewType = ViewBag.ViewType as string;
+    var itemId = ViewBag.ItemId as int?;
+    var timetableId = ViewBag.TimetableId;
+}
+
+@model IEnumerable<TimetablePlacement>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Timetable Details - @timetable.Tag</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">Home</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Timetable" asp-action="Management">Timetable Management</a>
+                    </li>
+                    <li class="breadcrumb-item active">View Schedule</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-info card-outline">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-calendar-days"></i> &ensp; Timetable Viewer
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>View Type</label>
+                    <select id="viewTypeSelect" class="form-control select2bs4">
+                        @if (viewType == "Educator")
+                        {
+                            <option value="Educator" selected>Educator Schedule</option>
+                        }
+                        else
+                        {
+                            <option value="Educator">Educator Schedule</option>
+                        }
+                        
+                        @if (viewType == "Class")
+                        {
+                            <option value="Class" selected>Class Schedule</option>
+                        }
+                        else
+                        {
+                            <option value="Class">Class Schedule</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Select Item</label>
+                    <select id="itemSelect" class="form-control select2bs4">
+                        @if (viewType == "Educator")
+                        {
+                            foreach (var educator in ViewBag.Educators)
+                            {
+                                @if (itemId == educator.EducatorId)
+                                {
+                                    <option value="@educator.EducatorId" selected>@educator.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@educator.EducatorId">@educator.Name</option>
+                                }
+                            }
+                        }
+                        else if (viewType == "Class")
+                        {
+                            foreach (var classItem in ViewBag.Classes)
+                            {
+                                @if (itemId == classItem.ClassId)
+                                {
+                                    <option value="@classItem.ClassId" selected>@classItem.ClassName</option>
+                                }
+                                else
+                                {
+                                    <option value="@classItem.ClassId">@classItem.ClassName</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button id="viewScheduleBtn" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Schedule
+                </button>
+            </div>
+        </div>
+
+        <div class="timetable-container @(Model.Any() ? "" : "d-none")">
+            @if (Model.Any())
+            {
+                <h5 class="mb-3">
+                    @if (viewType == "Educator")
+                    {
+                        <span>Schedule for Educator: <strong>@Model.First().EducatorFullName</strong></span>
+                    }
+                    else if (viewType == "Class")
+                    {
+                        <span>Schedule for Class: <strong>@Model.First().ClassName</strong></span>
+                    }
+                </h5>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered timetable-table">
+                        <thead class="bg-info">
+                            <tr>
+                                <th class="text-center">Hour</th>
+                                @{
+                                    var distinctDays = Model.Select(p => new { p.DayOfWeek, p.DayShortName })
+                                        .Distinct()
+                                        .OrderBy(d => {
+                                            // Order days of week properly
+                                            string[] daysOrder = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+                                            return Array.IndexOf(daysOrder, d.DayOfWeek);
+                                        })
+                                        .ToList();
+                                }
+                                @foreach (var day in distinctDays)
+                                {
+                                    <th class="text-center">@day.DayOfWeek (@day.DayShortName)</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var distinctLessons = Model.Select(p => new { p.LessonNumber, p.StartTime, p.EndTime })
+                                    .Distinct()
+                                    .OrderBy(l => l.LessonNumber)
+                                    .ToList();
+                            }
+                            @foreach (var lesson in distinctLessons)
+                            {
+                                <tr>
+                                    <td class="text-center bg-light">
+                                        <strong>@lesson.LessonNumber</strong><br />
+                                        <small>@lesson.StartTime - @lesson.EndTime</small>
+                                    </td>
+                                    @foreach (var day in distinctDays)
+                                    {
+                                        var placement = Model.FirstOrDefault(p => 
+                                            p.DayOfWeek == day.DayOfWeek && 
+                                            p.LessonNumber == lesson.LessonNumber);
+                                            
+                                        if (placement != null)
+                                        {
+                                            <td class="timetable-cell">
+                                                <div class="course-info">
+                                                    <div class="course-title">@placement.CourseCode - @placement.CourseName</div>
+                                                    @if (viewType == "Educator")
+                                                    {
+                                                        <div class="class-info">Class: @placement.ClassName</div>
+                                                        <div class="room-info">Room: @placement.ClassroomName</div>
+                                                    }
+                                                    else if (viewType == "Class")
+                                                    {
+                                                        <div class="educator-info">Educator: @placement.EducatorShortName</div>
+                                                        <div class="room-info">Room: @placement.ClassroomName</div>
+                                                    }
+                                                </div>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-center text-muted">-</td>
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <h5><i class="icon fas fa-info"></i> No schedule data found</h5>
+                    <p>There are no placement data for the selected criteria. Please try different options or make sure the timetable has been processed.</p>
+                </div>
+            }
+        </div>
+
+        <div class="empty-state @(Model.Any() ? "d-none" : "")">
+            <div class="text-center p-5">
+                <i class="fas fa-calendar-day fa-4x text-muted mb-3"></i>
+                <h4>Select View Options</h4>
+                <p class="text-muted">Please select a view type and an item to display the timetable.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .timetable-table {
+            background-color: white;
+        }
+        
+        .timetable-cell {
+            height: 100px;
+            padding: 8px;
+            vertical-align: top;
+            font-size: 0.9rem;
+        }
+        
+        .course-info {
+            border-left: 4px solid #3c8dbc;
+            padding-left: 8px;
+            background-color: #f0f7ff;
+            height: 100%;
+        }
+        
+        .course-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .class-info, .educator-info, .room-info {
+            font-size: 0.85rem;
+            color: #555;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2
+            $('.select2bs4').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+            
+            // View Type change event
+            $('#viewTypeSelect').change(function() {
+                var viewType = $(this).val();
+                var timetableId = @timetableId;
+                
+                // Update item select options based on view type
+                $.ajax({
+                    url: '@Url.Action("GetItemOptions", "Timetable")',
+                    type: 'GET',
+                    data: { viewType: viewType, timetableId: timetableId },
+                    success: function(data) {
+                        var itemSelect = $('#itemSelect');
+                        itemSelect.empty();
+                        
+                        $.each(data, function(index, item) {
+                            if (viewType === 'Educator') {
+                                itemSelect.append(new Option(item.name, item.educatorId));
+                            } else {
+                                itemSelect.append(new Option(item.className, item.classId));
+                            }
+                        });
+                        
+                        itemSelect.trigger('change');
+                    }
+                });
+            });
+            
+            // View Schedule button click
+            $('#viewScheduleBtn').click(function() {
+                var viewType = $('#viewTypeSelect').val();
+                var itemId = $('#itemSelect').val();
+                var timetableId = @timetableId;
+                
+                if (itemId) {
+                    window.location.href = '@Url.Action("Details", "Timetable")' + 
+                        '?timetableId=' + timetableId + 
+                        '&viewType=' + viewType + 
+                        '&itemId=' + itemId;
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Selection Required',
+                        text: 'Please select an item to view its schedule.'
+                    });
+                }
+            });
+        });
+    </script>
+}

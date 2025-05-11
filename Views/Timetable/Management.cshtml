@@ -77,22 +77,22 @@
                             }
                         </td>
                             <td class="text-center">
-                                <a asp-controller="Timetable" asp-action="Details" asp-route-courseId=""
-                                    class="btn btn-info btn-sm mb-1">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a asp-controller="Timetable" asp-action="Details" asp-route-courseId=""
-                                    class="btn btn-info btn-sm mb-1">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a asp-controller="Timetable" asp-action="Details" asp-route-courseId=""
-                                    class="btn btn-info btn-sm mb-1">
-                                    <i class="fas fa-eye"></i>
+                                <a asp-controller="Timetable" asp-action="Details" asp-route-timetableId="@timetable.TimetableId"
+                                    class="btn btn-info btn-sm mb-1" title="View details">
+                                    <i class="fas fa-eye"></i> View
                                 </a>
                                 
-                                <button class="btn btn-danger btn-sm delete-timetable-button mb-1" data-timetable-id=""
-                                    data-timetable-tag="" data-timetable-desc=""
-                                    data-toggle="modal" data-target="#deleteTimetableModal">
+                                <button class="btn btn-primary btn-sm schedule-timetable-button mb-1" 
+                                    data-timetable-id="@timetable.TimetableId" title="Process with Grey Wolf Optimization Algorithm"
+                                    @(timetable.TimetableStateId == 2 ? "disabled" : "")>
+                                    <i class="fas fa-calendar-check"></i>
+                                </button>
+                                
+                                <button class="btn btn-danger btn-sm delete-timetable-button mb-1" 
+                                    data-timetable-id="@timetable.TimetableId"
+                                    data-timetable-tag="@timetable.Tag" 
+                                    data-timetable-desc="@(timetable.Description ?? "No description")"
+                                    data-toggle="modal" data-target="#deleteTimetableModal" title="Delete timetable">
                                     <i class="fas fa-trash"></i>
                                 </button>
 
@@ -131,7 +131,7 @@
 
                     <div class="form-group col-md-12">
                         <label>Description</label>
-                        <textarea class="form-control" id="newCourseDescription" rows="3" maxlength="250"></textarea>
+                        <textarea class="form-control" id="newTimetableDescription" rows="3" maxlength="250"></textarea>
                     </div>
 
                 <div class="col-md-12">
@@ -166,6 +166,76 @@
 
     <script>
         $(document).ready(function () {
+            // Schedule button click handler
+            $('.schedule-timetable-button').click(function() {
+                var timetableId = $(this).data('timetable-id');
+                var button = $(this);
+                
+                // Confirm before starting the scheduler
+                Swal.fire({
+                    title: 'Start Scheduling?',
+                    text: 'This will process the timetable using Grey Wolf Optimization algorithm. This process cannot be interrupted once started.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, start scheduling',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#3085d6',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Disable the button and show processing state
+                        button.prop('disabled', true);
+                        button.html('<i class="fas fa-spinner fa-spin"></i>');
+                        
+                        // Call the API to start scheduling
+                        $.ajax({
+                            url: '@Url.Action("ProcessTimetable", "Timetable")',
+                            type: 'POST',
+                            data: JSON.stringify({ timetableId: parseInt(timetableId) }),
+                            contentType: 'application/json',
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Scheduling Started',
+                                        text: 'The timetable is now being processed. You can check its status later.',
+                                        timer: 3000,
+                                        showConfirmButton: false
+                                    }).then(() => {
+                                        // Reload the page to show updated status
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: response.message || 'Something went wrong'
+                                    });
+                                    // Re-enable the button
+                                    button.prop('disabled', false);
+                                    button.html('<i class="fas fa-calendar-check"></i>');
+                                }
+                            },
+                            error: function(xhr) {
+                                var errorMessage = 'Something went wrong';
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+                                
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: errorMessage
+                                });
+                                
+                                // Re-enable the button
+                                button.prop('disabled', false);
+                                button.html('<i class="fas fa-calendar-check"></i>');
+                            }
+                        });
+                    }
+                });
+            });
+            
             $('#createNewTimetableButton').click(function () {
                 if(!$('#comfirmCheckbox').is(':checked')) {
                      Swal.fire({
@@ -178,24 +248,47 @@
                         });                    
                     return;
                 }
+                
+                // Get the form data
+                var timetableTag = $('#newTimetableTag').val();
+                var timetableDescription = $('#newTimetableDescription').val();
+                
+                // Validate required fields
+                if (!timetableTag) {
+                    Swal.fire({
+                        toast: true,
+                        icon: 'warning',
+                        title: "Timetable tag is required.",
+                        position: 'top',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                    return;
+                }
+                
+                // Prepare data for AJAX request
+                var timetableData = {
+                    Tag: timetableTag,
+                    Description: timetableDescription
+                };
 
                 $.ajax({
-                    url: '@Url.Action("NewClassroom", "Classroom")',
+                    url: '@Url.Action("CreateTimetable", "Timetable")',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify(classroomData),
+                    data: JSON.stringify(timetableData),
                     success: function (response) {
                         Swal.fire({
                             icon: 'success',
-                            title: "Classroom added successfully.",
+                            title: "Timetable has been added to the queue and will be scheduled soon.",
                             showConfirmButton: false,
-                            timer: 2000
+                            timer: 2500
                         }).then(() => {
                             location.reload();
                         });
                     },
                     error: function (xhr, status, error) {
-                        var errorMessage = "An unknown error occurred. Please try again."; // varsayılan
+                        var errorMessage = "An unknown error occurred. Please try again.";
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMessage = xhr.responseJSON.message;
                         }
