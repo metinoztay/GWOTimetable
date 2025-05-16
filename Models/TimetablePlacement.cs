@@ -9,6 +9,8 @@ public partial class TimetablePlacement
 
     public Guid WorkspaceId { get; set; }
 
+    public int TimetableId { get; set; }
+
     public int DayId { get; set; }
 
     public string DayOfWeek { get; set; } = null!;
@@ -32,6 +34,8 @@ public partial class TimetablePlacement
     public string EducatorFullName { get; set; } = null!;
 
     public string EducatorShortName { get; set; } = null!;
+
+    public virtual Timetable Timetable { get; set; } = null!;
 
     public virtual Workspace Workspace { get; set; } = null!;
 }

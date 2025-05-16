@@ -340,6 +340,11 @@ public partial class Db12026Context : DbContext
                 .IsUnicode(false)
                 .IsFixedLength();
 
+            entity.HasOne(d => d.Timetable).WithMany(p => p.TimetablePlacements)
+                .HasForeignKey(d => d.TimetableId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TimetablePlacements_TimetableId");
+
             entity.HasOne(d => d.Workspace).WithMany(p => p.TimetablePlacements)
                 .HasForeignKey(d => d.WorkspaceId)
                 .OnDelete(DeleteBehavior.ClientSetNull)

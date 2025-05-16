@@ -101,7 +101,62 @@ namespace GWOTimetable.Controllers
             
             return View(placements);
         }
-        
+
+        [HttpPost]
+        public async Task<IActionResult> Delete([FromBody] TimetableDeleteModel model)
+        {
+            try
+            {
+                Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+
+                // Get the timetable and verify it belongs to the current workspace
+                var timetable = await _context.Timetables
+                    .FirstOrDefaultAsync(t => t.TimetableId == model.TimetableId && t.WorkspaceId == selectedWorkspaceId);
+
+                if (timetable == null)
+                {
+                    return Json(new { success = false, message = "Timetable not found." });
+                }
+
+                // Start a transaction to ensure both timetable and its placements are deleted atomically
+                using (var transaction = await _context.Database.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        // First delete all placements associated with this timetable
+                        var placements = await _context.TimetablePlacements
+                            .Where(tp => tp.TimetableId == model.TimetableId)
+                            .ToListAsync();
+
+                        if (placements.Any())
+                        {
+                            _context.TimetablePlacements.RemoveRange(placements);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        // Then delete the timetable itself
+                        _context.Timetables.Remove(timetable);
+                        await _context.SaveChangesAsync();
+
+                        // Commit the transaction
+                        await transaction.CommitAsync();
+
+                        return Json(new { success = true });
+                    }
+                    catch (Exception ex)
+                    {
+                        // Roll back the transaction if any error occurs
+                        await transaction.RollbackAsync();
+                        return Json(new { success = false, message = "An error occurred while deleting the timetable." });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "An error occurred while processing your request." });
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> ProcessTimetable([FromBody] TimetableProcessModel model)
         {
@@ -262,6 +317,11 @@ namespace GWOTimetable.Controllers
     }
     
     public class TimetableProcessModel
+    {
+        public int TimetableId { get; set; }
+    }
+
+    public class TimetableDeleteModel
     {
         public int TimetableId { get; set; }
     }

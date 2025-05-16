@@ -19,6 +19,8 @@ public partial class Timetable
 
     public DateTime? UpdatedAt { get; set; }
 
+    public virtual ICollection<TimetablePlacement> TimetablePlacements { get; set; } = new List<TimetablePlacement>();
+
     public virtual TimetableState TimetableState { get; set; } = null!;
 
     public virtual Workspace Workspace { get; set; } = null!;

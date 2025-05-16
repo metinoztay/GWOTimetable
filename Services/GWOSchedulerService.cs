@@ -917,7 +917,8 @@ namespace GWOTimetable.Services
                 result.Add(new TimetablePlacement
                 {
                     WorkspaceId = classCourse.WorkspaceId,
-                    DayId = day.DayId, // Eklenen DayId alanı
+                    TimetableId = timetableId,
+                    DayId = day.DayId,
                     DayOfWeek = day.DayOfWeek,
                     DayShortName = day.ShortName,
                     LessonNumber = lesson.LessonNumber,
@@ -939,7 +940,7 @@ namespace GWOTimetable.Services
         {
             // First delete any existing placements for this timetable ID
             var existingPlacements = await _context.TimetablePlacements
-                .Where(tp => tp.WorkspaceId == timetable.WorkspaceId)
+                .Where(tp => tp.TimetableId == timetable.TimetableId)
                 .ToListAsync();
                 
             _context.TimetablePlacements.RemoveRange(existingPlacements);
