@@ -11,10 +11,10 @@ namespace GWOTimetable.Services
     {
         private readonly Db12026Context _context;
         private Random _random;
-        private const int MAX_ITERATIONS = 100;
-        private const int POPULATION_SIZE = 20; // Number of wolves in the pack
+        private const int MAX_ITERATIONS = 500; // Daha fazla iterasyon ile daha iyi çözümler
+        private const int POPULATION_SIZE = 200; // Number of wolves in the packy
         
-        // GWO parameters
+        // GWO parametersy
         private const double A_COEF_START = 2.0;
         private const double A_COEF_END = 0.0;
 
@@ -193,7 +193,13 @@ namespace GWOTimetable.Services
                     break;
             }
             
-            // Return the best solution found (Alpha wolf's placements)
+            // GWO algoritması tamamlandı. En iyi çözüm üzerinde format korumalı iyileştirme uygulanıyor...
+            Console.WriteLine("GWO algoritması tamamlandı. En iyi çözüm üzerinde format korumalı iyileştirme uygulanıyor...");
+            alphaWolf.Placements = ImproveUnplacedLessons(alphaWolf.Placements, data);
+            // ImproveUnplacedLessons metodu kendi içinde detaylı loglama yapar.
+            Console.WriteLine("Format korumalı iyileştirme tamamlandı.");
+            
+            // En iyi çözümü döndür
             return ConvertToTimetablePlacements(alphaWolf.Placements, data, timetableId);
         }
 
@@ -222,7 +228,11 @@ namespace GWOTimetable.Services
             // STEP 1: First, apply all timetable constraints (fixed placements)
             ApplyTimetableConstraints(data, placements);
             
-            // STEP 2: Create a dictionary to track already scheduled hours per class course from fixed placements
+            // STEP 2: Pre-compute all invalid slots based on constraints
+            // This will make constraint checking more efficient during scheduling
+            var invalidSlots = PreComputeInvalidSlots(data);
+            
+            // STEP 3: Create a dictionary to track already scheduled hours per class course from fixed placements
             var scheduledHoursPerCourse = placements
                 .GroupBy(p => p.ClassCourseId)
                 .ToDictionary(g => g.Key, g => g.Count());
@@ -317,10 +327,10 @@ namespace GWOTimetable.Services
                     }
                 }
                 
-                // Yerleştirilecek ders bloklarını ayarla (remainingBlocks tüm algoritmaya gidecek listedir)
-                var lessonBlocks = remainingBlocks;
+                // Yerleştirilecek ders bloklarını ayarla (büyük blokları önce yerleştir)
+                var lessonBlocks = remainingBlocks.OrderByDescending(b => b).ToList();
                 
-                // Add to courses to schedule
+                // Add to courses to schedule (büyük blokları önce işle)
                 coursesToSchedule.Add(new ClassCourseScheduling
                 {
                     ClassCourse = classCourse,
@@ -329,8 +339,11 @@ namespace GWOTimetable.Services
                 });
             }
             
-            // Randomize order
-            coursesToSchedule = coursesToSchedule.OrderBy(x => _random.Next()).ToList();
+            // Öncelikle büyük bloklu dersleri önce işle
+            coursesToSchedule = coursesToSchedule
+                .OrderByDescending(c => c.LessonBlocks.Max())
+                .ThenBy(_ => _random.Next())
+                .ToList();
             
             // Her ders için, tüm blokları orijinal formatta yerleştirmeye çalış
             foreach (var courseToSchedule in coursesToSchedule)
@@ -385,7 +398,13 @@ namespace GWOTimetable.Services
                         bool blockPlaced = false;
                         foreach (var startLessonId in possibleStartLessons)
                         {
-                            // Bu blok için yerleştirme geçerli mi?
+                            // Önce kısıtları kontrol et - eğer bu slot kısıtlara göre geçersizse hiç deneme
+                            if (IsSlotInvalidDueToConstraints(courseToSchedule.ClassCourse, day.DayId, startLessonId, lessonBlock, data, invalidSlots))
+                            {
+                                continue; // Bu slot kısıtlara göre geçersiz, sonraki slotu dene
+                            }
+                            
+                            // Diğer yerleştirme kurallarını kontrol et
                             bool isValid = IsValidPlacement(
                                 courseToSchedule.ClassCourse, 
                                 day.DayId, 
@@ -399,6 +418,13 @@ namespace GWOTimetable.Services
                                 // Blok içindeki her ders saati için ardışık yerleştirmeler yap
                                 for (int i = 0; i < lessonBlock; i++)
                                 {
+                                    // Eğer bu ders saati daha önce yerleştirilmişse atla
+                                    if (placements.Any(p => p.DayId == day.DayId && p.LessonId == startLessonId + i) ||
+                                        temporaryPlacements.Any(p => p.DayId == day.DayId && p.LessonId == startLessonId + i))
+                                    {
+                                        allValid = false;
+                                        break;
+                                    }
                                     // Find the lesson with the right ID
                                     var currentLessonId = startLessonId + i;
                                     
@@ -411,7 +437,7 @@ namespace GWOTimetable.Services
                                 }
                                 
                                 blockPlaced = true;
-                                break; // Bu blok için geçerli bir yer bulundu, sonraki bloğa geç
+                                break; // Bu blok yerleştirildi, sonraki bloğa geç
                             }
                         }
                         
@@ -546,6 +572,8 @@ namespace GWOTimetable.Services
                 .Where(tc => tc.ClassCourseId > 0)
                 .ToList();
             
+            Console.WriteLine($"Sabit yerleştirme sayısı: {timetableAssignments.Count}");
+            
             foreach (var assignment in timetableAssignments)
             {
                 // Add this fixed placement to our solution
@@ -568,6 +596,96 @@ namespace GWOTimetable.Services
             // CLOSED (ClassCourseId=0) olan constraint'ler otomatik olarak IsValidPlacement metodunda kontrol edilecek
             // İşlem yapmıyoruz, çünkü bunlar placements listesine eklenmeyecek, sadece belirli saatler dolu olarak işaretlenecek
             // IsValidPlacement metodu zaten bunları kontrol ediyor
+            var closedConstraints = data.TimetableConstraints
+                .Where(tc => tc.ClassCourseId == 0)
+                .ToList();
+                
+            Console.WriteLine($"CLOSED kısıtlama sayısı: {closedConstraints.Count}");
+        }
+        
+        // Kısıtlara göre geçersiz slotları önceden hesapla
+        private Dictionary<string, bool> PreComputeInvalidSlots(SchedulingData data)
+        {
+            var invalidSlots = new Dictionary<string, bool>();
+            
+            // 1. Sınıf kısıtlamaları (ClassConstraints)
+            foreach (var constraint in data.ClassConstraints.Where(c => !c.IsPlaceable))
+            {
+                string key = $"class_{constraint.ClassId}_{constraint.DayId}_{constraint.LessonId}";
+                invalidSlots[key] = true;
+            }
+            
+            // 2. Eğitimci kısıtlamaları (EducatorConstraints)
+            foreach (var constraint in data.EducatorConstraints.Where(c => !c.IsPlaceable))
+            {
+                string key = $"educator_{constraint.EducatorId}_{constraint.DayId}_{constraint.LessonId}";
+                invalidSlots[key] = true;
+            }
+            
+            // 3. Derslik kısıtlamaları (ClassroomConstraints)
+            foreach (var constraint in data.ClassroomConstraints.Where(c => !c.IsPlaceable))
+            {
+                string key = $"classroom_{constraint.ClassroomId}_{constraint.DayId}_{constraint.LessonId}";
+                invalidSlots[key] = true;
+            }
+            
+            // 4. "CLOSED" TimetableConstraint (ClassCourseId=0)
+            foreach (var constraint in data.TimetableConstraints.Where(tc => tc.ClassCourseId == 0))
+            {
+                string key = $"closed_{constraint.DayId}_{constraint.LessonId}";
+                invalidSlots[key] = true;
+            }
+            
+            Console.WriteLine($"Toplam geçersiz slot sayısı: {invalidSlots.Count}");
+            return invalidSlots;
+        }
+        
+        // Bir slotun kısıtlara göre geçersiz olup olmadığını kontrol et
+        private bool IsSlotInvalidDueToConstraints(ClassCourse classCourse, int dayId, int startLessonId, int blockSize, 
+            SchedulingData data, Dictionary<string, bool> invalidSlots)
+        {
+            // Blok için gerekli tüm derslerin bulunduğundan emin ol
+            var lessonsToCheck = new List<int>();
+            for (int i = 0; i < blockSize; i++)
+            {
+                int lessonId = startLessonId + i;
+                // Dersin var olup olmadığını kontrol et
+                if (!data.Lessons.Any(l => l.LessonId == lessonId))
+                    return true; // Geçersiz ders ID
+                    
+                lessonsToCheck.Add(lessonId);
+            }
+            
+            // Get relevant constraint IDs
+            var classId = classCourse.ClassId;
+            var educatorId = classCourse.EducatorId;
+            var classroomId = classCourse.ClassroomId;
+            
+            // Tüm blok için kısıtları kontrol et
+            foreach (var lessonId in lessonsToCheck)
+            {
+                // 1. Sınıf kısıtlaması kontrolü
+                string classKey = $"class_{classId}_{dayId}_{lessonId}";
+                if (invalidSlots.ContainsKey(classKey))
+                    return true; // Kapalı sınıf zamanı
+                
+                // 2. Eğitimci kısıtlaması kontrolü
+                string educatorKey = $"educator_{educatorId}_{dayId}_{lessonId}";
+                if (invalidSlots.ContainsKey(educatorKey))
+                    return true; // Kapalı eğitimci zamanı
+                
+                // 3. Derslik kısıtlaması kontrolü
+                string classroomKey = $"classroom_{classroomId}_{dayId}_{lessonId}";
+                if (invalidSlots.ContainsKey(classroomKey))
+                    return true; // Kapalı derslik zamanı
+                
+                // 4. "CLOSED" TimetableConstraint kontrolü
+                string closedKey = $"closed_{dayId}_{lessonId}";
+                if (invalidSlots.ContainsKey(closedKey))
+                    return true; // Kapalı slot
+            }
+            
+            return false; // Kısıtlara göre geçerli
         }
         
         private bool IsValidPlacement(ClassCourse classCourse, int dayId, int startLessonId, int blockSize, 
@@ -703,6 +821,9 @@ namespace GWOTimetable.Services
                 .GroupBy(p => p.ClassCourseId)
                 .ToDictionary(g => g.Key, g => g.Count());
             
+            // 5. Track block violations (for placement format)
+            var blockViolations = 0;
+            
             foreach (var classCourse in data.ClassCourses)
             {
                 // Skip special ClassCourseId=0 used for "CLOSED" constraints
@@ -714,9 +835,118 @@ namespace GWOTimetable.Services
                 
                 if (scheduledHoursCount < requiredHours)
                 {
-                    violations += (requiredHours - scheduledHoursCount) * 500;
+                    // Yerleştirilemeyen her ders için çok daha fazla ceza puanı ver
+                    // Tüm derslerin yerleştirilmesi MUTLAK ZORUNLU olduğu için cezayı daha da artırıyoruz
+                    violations += (requiredHours - scheduledHoursCount) * 50000;
+                }
+                else if (scheduledHoursCount > requiredHours)
+                {
+                    // Gerekenden fazla ders yerleştirilmişse ceza ver
+                    violations += (scheduledHoursCount - requiredHours) * 2000; 
+                }
+                
+                // Check if course has a placement format
+                if (!string.IsNullOrEmpty(classCourse.Course.PlacementFormat) && requiredHours > 0)
+                {
+                    List<int> targetFormatBlocks = classCourse.Course.PlacementFormat
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(p => int.TryParse(p.Trim(), out int val) ? val : 0)
+                        .Where(val => val > 0)
+                        .OrderBy(b => b) // Karşılaştırma için sırala
+                        .ToList();
+
+                    // Sadece formatın toplam saati, gereken saatle eşleşiyorsa ve ders gerçekten yerleştirilmişse kontrol et
+                    if (targetFormatBlocks.Sum() == requiredHours && scheduledHoursCount == requiredHours)
+                    {
+                        var coursePlacementsForCurrentCourse = placements
+                            .Where(p => p.ClassCourseId == classCourse.ClassCourseId)
+                            .ToList(); // Bu, GetActualPlacedBlocks için girdi olacak
+
+                        // YENİ: GetActualPlacedBlocks kullanarak gerçek blok boyutlarını al
+                        // Bu, önceki manuel blok hesaplama mantığının yerini alır.
+                        List<int> actualScheduledBlockSizes = GetActualPlacedBlocks(coursePlacementsForCurrentCourse, data);
+                        // GetActualPlacedBlocks zaten sıralı liste döndürür. targetFormatBlocks da sıralıdır.
+
+                        // Sıralı blok listelerini karşılaştır
+                        if (!targetFormatBlocks.SequenceEqual(actualScheduledBlockSizes))
+                        {
+                            // Format uyuşmazlığı için ceza puanı ekle
+                            blockViolations += 10000; // Formatın yanlış uygulanması için ceza
+                        }
+                    }
+                    
+                    // Mevcut ve KORUNACAK: Aynı gün içindeki derslerin ardışık olmaması (bölünmüş blok) kontrolü.
+                    // Bu, bir dersin gün içinde kesintiye uğramamasını sağlar (örn: Pazartesi 1. ders ve 3. ders ama 2. ders boş).
+                    var coursePlacementsForSplitCheck = placements
+                        .Where(p => p.ClassCourseId == classCourse.ClassCourseId)
+                        .OrderBy(p => p.DayId)
+                        .ThenBy(p => p.LessonId)
+                        .ToList();
+                    
+                    var dayGroups = coursePlacementsForSplitCheck
+                        .GroupBy(p => p.DayId)
+                        .Select(g => new {
+                            DayId = g.Key,
+                            Lessons = g.OrderBy(p => p.LessonId).Select(p => p.LessonId).ToList()
+                        })
+                        .Where(g => g.Lessons.Count > 0)
+                        .ToList();
+                    
+                    foreach (var dayGroup in dayGroups)
+                    {
+                        var lessons = dayGroup.Lessons.OrderBy(l => l).ToList();
+                        for (int i = 1; i < lessons.Count; i++)
+                        {
+                            if (lessons[i] != lessons[i-1] + 1)
+                            {
+                                // Aynı gün içinde ardışık olmayan dersler MUTLAK YASAK
+                                // Çok yüksek bir ceza uygula - bu tür çözümlerin seçilmesini imkansız hale getir
+                                blockViolations += 100000; 
+                            }
+                        }
+                    }
+                }
+                
+                // Mevcut blok içi ardışıklık kontrolü (aynı gün içinde bölünme var mı?)
+                // Bu kontrol, yukarıdaki format kontrolü ile birlikte çalışabilir.
+                // Eğer format [3] ise ve gün içinde 1+2 şeklinde ise, yukarıdaki SequenceEqual bunu yakalar.
+                // Eğer format [1,2] ise ve gün içinde 3 şeklinde ise, yukarıdaki SequenceEqual bunu yakalar.
+                // Bu yüzden aşağıdaki spesifik 'split blocks' kontrolü belki gereksizleşebilir veya etkisi azaltılabilir.
+                if (scheduledHoursCount > 0) // Sadece yerleştirilmiş dersler için anlamlı
+                {
+                    var coursePlacementsForSplitCheck = placements
+                        .Where(p => p.ClassCourseId == classCourse.ClassCourseId)
+                        .OrderBy(p => p.DayId)
+                        .ThenBy(p => p.LessonId)
+                        .ToList();
+                    
+                    var dayGroups = coursePlacementsForSplitCheck
+                        .GroupBy(p => p.DayId)
+                        .Select(g => new {
+                            DayId = g.Key,
+                            Lessons = g.OrderBy(p => p.LessonId).Select(p => p.LessonId).ToList()
+                        })
+                        .Where(g => g.Lessons.Count > 0)
+                        .ToList();
+                    
+                    foreach (var dayGroup in dayGroups)
+                    {
+                        var lessons = dayGroup.Lessons.OrderBy(l => l).ToList();
+                        for (int i = 1; i < lessons.Count; i++)
+                        {
+                            if (lessons[i] != lessons[i-1] + 1)
+                            {
+                                // Aynı gün içinde ardışık olmayan dersler MUTLAK YASAK
+                                // Çok yüksek bir ceza uygula - bu tür çözümlerin seçilmesini imkansız hale getir
+                                blockViolations += 100000; 
+                            }
+                        }
+                    }
                 }
             }
+            
+            // Add block violations to total violations
+            violations += blockViolations;
             
             // Check for constraint violations
             foreach (var placement in placements)
@@ -934,6 +1164,179 @@ namespace GWOTimetable.Services
             }
             
             return result;
+        }
+
+        // Helper to get actual contiguous blocks from a list of placements for a course
+        private List<int> GetActualPlacedBlocks(List<PlacementRepresentation> coursePlacements, SchedulingData data)
+        {
+            var actualBlocks = new List<int>();
+            if (!coursePlacements.Any())
+                return actualBlocks;
+
+            var placementsByDay = coursePlacements
+                .GroupBy(p => p.DayId)
+                .Select(g => g.OrderBy(p => p.LessonId).ToList())
+                .ToList();
+
+            foreach (var dayPlacements in placementsByDay)
+            {
+                if (!dayPlacements.Any())
+                    continue;
+
+                int currentBlockSize = 0;
+                for (int i = 0; i < dayPlacements.Count; i++)
+                {
+                    if (i == 0 || dayPlacements[i].LessonId == dayPlacements[i - 1].LessonId + 1)
+                    {
+                        currentBlockSize++;
+                    }
+                    else
+                    {
+                        if (currentBlockSize > 0)
+                            actualBlocks.Add(currentBlockSize);
+                        currentBlockSize = 1; // Start new block
+                    }
+                }
+                if (currentBlockSize > 0) // Add the last block
+                    actualBlocks.Add(currentBlockSize);
+            }
+            actualBlocks.Sort(); // Consistent order for comparison
+            return actualBlocks;
+        }
+
+        // Yerleştirilemeyen dersleri iyileştir
+        private List<PlacementRepresentation> ImproveUnplacedLessons(List<PlacementRepresentation> placements, SchedulingData data)
+        {
+            var improvedPlacements = new List<PlacementRepresentation>(placements); // Start with a copy
+
+            var fixedPlacementsByCourse = data.TimetableConstraints
+                .Where(tc => tc.ClassCourseId > 0)
+                .GroupBy(tc => tc.ClassCourseId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var classCourse in data.ClassCourses.OrderBy(cc => _random.Next()))
+            {
+                if (classCourse.ClassCourseId == 0) continue; // Skip "CLOSED"
+
+                int requiredHours = classCourse.Course.WeeklyHourCount;
+                var currentCoursePlacements = improvedPlacements
+                    .Where(p => p.ClassCourseId == classCourse.ClassCourseId)
+                    .ToList();
+                int currentScheduledHours = currentCoursePlacements.Count;
+
+                List<int> originalFormatBlocks = new List<int>();
+                if (!string.IsNullOrEmpty(classCourse.Course.PlacementFormat))
+                {
+                    originalFormatBlocks = classCourse.Course.PlacementFormat
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(p => int.TryParse(p.Trim(), out int val) ? val : 0)
+                        .Where(val => val > 0)
+                        .ToList();
+                }
+                if (!originalFormatBlocks.Any() || originalFormatBlocks.Sum() != requiredHours)
+                {
+                    originalFormatBlocks.Clear();
+                    for (int i = 0; i < requiredHours; i++) originalFormatBlocks.Add(1);
+                }
+                originalFormatBlocks.Sort();
+
+                var actualCurrentBlocks = GetActualPlacedBlocks(currentCoursePlacements, data);
+                // actualCurrentBlocks are already sorted by GetActualPlacedBlocks
+
+                bool needsImprovement = false;
+                if (currentScheduledHours != requiredHours)
+                {
+                    needsImprovement = true;
+                    Console.WriteLine($"İyileştirme (Saat Eksik/Fazla): {classCourse.Class.ClassName}, Ders: {classCourse.Course.CourseName} - Gerekli: {requiredHours}, Yerleştirilmiş: {currentScheduledHours}");
+                }
+                else if (!originalFormatBlocks.SequenceEqual(actualCurrentBlocks))
+                {
+                    needsImprovement = true;
+                    Console.WriteLine($"İyileştirme (Format Farklı): {classCourse.Class.ClassName}, Ders: {classCourse.Course.CourseName} - Hedef: {string.Join(',', originalFormatBlocks)}, Mevcut: {string.Join(',', actualCurrentBlocks)}");
+                }
+
+                if (needsImprovement)
+                {
+                    var fixedPlacementsForThisCourse = fixedPlacementsByCourse.ContainsKey(classCourse.ClassCourseId)
+                        ? fixedPlacementsByCourse[classCourse.ClassCourseId]
+                        : new List<TimetableConstraint>();
+
+                    improvedPlacements.RemoveAll(p =>
+                        p.ClassCourseId == classCourse.ClassCourseId &&
+                        !fixedPlacementsForThisCourse.Any(fp => fp.DayId == p.DayId && fp.LessonId == p.LessonId && fp.ClassCourseId == p.ClassCourseId)); // Ensure it's the same course's fixed placement
+
+                    currentCoursePlacements = improvedPlacements // Refresh current placements after removal
+                        .Where(p => p.ClassCourseId == classCourse.ClassCourseId)
+                        .ToList();
+                    // currentScheduledHours = currentCoursePlacements.Count; // This would be only fixed hours now
+
+                    List<int> scheduledFixedBlocks = IdentifyScheduledBlocks(
+                        classCourse.ClassCourseId,
+                        new List<int>(originalFormatBlocks), // Pass a copy of original format to IdentifyScheduledBlocks
+                        fixedPlacementsForThisCourse,
+                        data);
+                    // scheduledFixedBlocks are not necessarily sorted by IdentifyScheduledBlocks, but it's used for removal, so order doesn't strictly matter here for 'Except' like logic.
+
+                    List<int> blocksToPlace = new List<int>(originalFormatBlocks);
+                    var tempScheduledFixedBlocks = new List<int>(scheduledFixedBlocks); // mutable copy for removal
+                    foreach (var block in originalFormatBlocks)
+                    {
+                        if (tempScheduledFixedBlocks.Contains(block))
+                        {
+                            blocksToPlace.Remove(block);
+                            tempScheduledFixedBlocks.Remove(block);
+                        }
+                    }
+                    blocksToPlace = blocksToPlace.OrderByDescending(b => b).ToList();
+
+                    Console.WriteLine($"İyileştirme - Yerleştirilecek Bloklar ({classCourse.Course.CourseName}): {string.Join(',', blocksToPlace)}");
+
+                    foreach (var blockToPlace in blocksToPlace)
+                    {
+                        if (blockToPlace <= 0) continue;
+                        bool blockPlacedSuccessfully = false;
+
+                        var randomizedDays = data.Days
+                            .Where(d => d.LessonCount >= blockToPlace)
+                            .OrderBy(d => _random.Next())
+                            .ToList();
+
+                        foreach (var day in randomizedDays)
+                        {
+                            if (blockPlacedSuccessfully) break;
+
+                            var possibleStartLessons = data.Lessons
+                                .Where(l => l.LessonNumber + blockToPlace - 1 <= day.LessonCount)
+                                .OrderBy(l => _random.Next())
+                                .ToList();
+
+                            foreach (var lesson in possibleStartLessons)
+                            {
+                                if (IsValidPlacement(classCourse, day.DayId, lesson.LessonId, blockToPlace, data, improvedPlacements))
+                                {
+                                    for (int i = 0; i < blockToPlace; i++)
+                                    {
+                                        improvedPlacements.Add(new PlacementRepresentation
+                                        {
+                                            ClassCourseId = classCourse.ClassCourseId,
+                                            DayId = day.DayId,
+                                            LessonId = lesson.LessonId + i
+                                        });
+                                    }
+                                    blockPlacedSuccessfully = true;
+                                    Console.WriteLine($"İyileştirme - Başarıyla Yerleştirildi: {classCourse.Course.CourseName}, Blok: {blockToPlace}, Gün: {day.ShortName}, Saat: {lesson.LessonNumber}");
+                                    break; 
+                                }
+                            }
+                        }
+                        if (!blockPlacedSuccessfully)
+                        {
+                            Console.WriteLine($"İyileştirme - HATA: {classCourse.Course.CourseName} için {blockToPlace} saatlik blok yerleştirilemedi!");
+                        }
+                    }
+                }
+            }
+            return improvedPlacements;
         }
 
         private async Task SavePlacementsAsync(List<TimetablePlacement> placements, Timetable timetable)
