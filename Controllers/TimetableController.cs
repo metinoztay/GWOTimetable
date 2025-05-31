@@ -191,6 +191,51 @@ namespace GWOTimetable.Controllers
             }
         }
         
+        public async Task<IActionResult> AllSchedules(int timetableId)
+        {
+            Guid selectedWorkspaceId = Guid.Parse(User.FindFirstValue("WorkspaceId"));
+            
+            // Get the timetable information
+            var timetable = await _context.Timetables
+                .Include(t => t.TimetableState)
+                .FirstOrDefaultAsync(t => t.TimetableId == timetableId && t.WorkspaceId == selectedWorkspaceId);
+                
+            if (timetable == null)
+            {
+                return NotFound();
+            }
+            
+            // Get all educators and classes for reference
+            var educators = await _context.Educators
+                .Where(e => e.WorkspaceId == selectedWorkspaceId)
+                .OrderBy(e => e.LastName)
+                .ThenBy(e => e.FirstName)
+                .Select(e => new { e.EducatorId, Name = $"{e.Title} {e.FirstName} {e.LastName}".Trim() })
+                .ToListAsync();
+                
+            var classes = await _context.Classes
+                .Where(c => c.WorkspaceId == selectedWorkspaceId)
+                .OrderBy(c => c.ClassName)
+                .Select(c => new { c.ClassId, c.ClassName })
+                .ToListAsync();
+                
+            // Get all placements for this timetable
+            var placements = await _context.TimetablePlacements
+                .Where(p => p.TimetableId == timetableId && p.WorkspaceId == selectedWorkspaceId)
+                .OrderBy(p => p.DayId)
+                .ThenBy(p => p.LessonNumber)
+                .ToListAsync();
+            
+            // Prepare view data
+            ViewBag.TimetableId = timetableId;
+            ViewBag.Timetable = timetable;
+            ViewBag.Educators = educators;
+            ViewBag.Classes = classes;
+            ViewBag.ActiveTabId = "TimetableManagement";
+            
+            return View(placements);
+        }
+        
         [HttpGet]
         public async Task<IActionResult> TimetableStatus(int timetableId)
         {

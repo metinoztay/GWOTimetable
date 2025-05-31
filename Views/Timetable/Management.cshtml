@@ -82,6 +82,11 @@
                                     <i class="fas fa-eye"></i> View
                                 </a>
                                 
+                                <a asp-controller="Timetable" asp-action="AllSchedules" asp-route-timetableId="@timetable.TimetableId"
+                                    class="btn btn-success btn-sm mb-1" title="View all schedules at once">
+                                    <i class="fas fa-table"></i> All Schedules
+                                </a>
+                                
                                 <button class="btn btn-primary btn-sm schedule-timetable-button mb-1" 
                                     data-timetable-id="@timetable.TimetableId" title="Process with Grey Wolf Optimization Algorithm"
                                     @(timetable.TimetableStateId == 2 ? "disabled" : "")>

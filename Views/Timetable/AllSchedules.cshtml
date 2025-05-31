@@ -1,0 +1,343 @@
+@using System.Security.Claims
+@{
+    ViewBag.Title = "All Schedules";
+    ViewBag.MenuHead = "Management";
+    ViewBag.Controller = "Timetable";
+    ViewBag.Action = "Management";
+    
+    var timetable = ViewBag.Timetable as Timetable;
+    var timetableId = ViewBag.TimetableId;
+}
+
+@model IEnumerable<TimetablePlacement>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">All Schedules - @(timetable?.Tag ?? "Timetable")</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">Home</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Timetable" asp-action="Management">Timetable Management</a>
+                    </li>
+                    <li class="breadcrumb-item active">All Schedules</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-info card-outline">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-calendar-days"></i> &ensp; Combined Timetable View
+        </h3>
+        <div class="card-tools">
+            <div class="btn-group">
+                <a asp-controller="Timetable" asp-action="Details" asp-route-timetableId="@timetableId" asp-route-viewType="Educator" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-chalkboard-teacher"></i> Educator View
+                </a>
+                <a asp-controller="Timetable" asp-action="Details" asp-route-timetableId="@timetableId" asp-route-viewType="Class" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-users"></i> Class View
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <h5><i class="icon fas fa-info"></i> No schedule data found</h5>
+                <p>There are no placement data for this timetable. Please make sure the timetable has been processed.</p>
+            </div>
+        }
+        else
+        {
+            <div class="filter-controls mb-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Filter by Day</label>
+                            <select id="dayFilter" class="form-control select2bs4">
+                                <option value="all">All Days</option>
+                                @{
+                                    var distinctDays = Model.Select(p => new { p.DayId, p.DayOfWeek, p.DayShortName })
+                                        .Distinct()
+                                        .OrderBy(d => d.DayId)
+                                        .ToList();
+                                }
+                                @foreach (var day in distinctDays)
+                                {
+                                    <option value="@day.DayOfWeek">@day.DayOfWeek (@day.DayShortName)</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Filter by Lesson</label>
+                            <select id="lessonFilter" class="form-control select2bs4">
+                                <option value="all">All Lessons</option>
+                                @{
+                                    var distinctLessons = Model.Select(p => new { p.LessonNumber, p.StartTime, p.EndTime })
+                                        .Distinct()
+                                        .OrderBy(l => l.LessonNumber)
+                                        .ToList();
+                                }
+                                @foreach (var lesson in distinctLessons)
+                                {
+                                    <option value="@lesson.LessonNumber">Lesson @lesson.LessonNumber (@lesson.StartTime - @lesson.EndTime)</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="showEducators" checked>
+                                <label class="form-check-label" for="showEducators">Show Educators</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="showClasses" checked>
+                                <label class="form-check-label" for="showClasses">Show Classes</label>
+                            </div>
+                            <button id="applyFilters" class="btn btn-primary">Apply Filters</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Educators Section -->
+                <div class="col-md-12 mb-4 educator-section">
+                    <h4><i class="fas fa-chalkboard-teacher"></i> Educators</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="bg-info">
+                                <tr>
+                                    <th>Educator</th>
+                                    @foreach (var day in distinctDays)
+                                    {
+                                        <th class="text-center day-column" data-day="@day.DayOfWeek">@day.DayShortName</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var educatorNames = Model.Select(p => p.EducatorFullName).Distinct().OrderBy(n => n).ToList();
+                                }
+                                @foreach (var educatorName in educatorNames)
+                                {
+                                    <tr class="educator-row">
+                                        <td class="font-weight-bold">@educatorName</td>
+                                        @foreach (var day in distinctDays)
+                                        {
+                                            <td class="day-column" data-day="@day.DayOfWeek">
+                                                @{
+                                                    var educatorLessons = Model.Where(p => p.EducatorFullName == educatorName && p.DayOfWeek == day.DayOfWeek)
+                                                        .OrderBy(p => p.LessonNumber)
+                                                        .ToList();
+                                                }
+                                                @if (educatorLessons.Any())
+                                                {
+                                                    <div class="day-schedule">
+                                                        @foreach (var lesson in educatorLessons)
+                                                        {
+                                                            <div class="lesson-item lesson-@lesson.LessonNumber" data-lesson="@lesson.LessonNumber">
+                                                                <span class="badge badge-primary">L@(lesson.LessonNumber)</span>
+                                                                <div class="lesson-details">
+                                                                    <div><strong>@lesson.CourseCode</strong> - @lesson.CourseName</div>
+                                                                    <div><i class="fas fa-users"></i> @lesson.ClassName</div>
+                                                                    <div><i class="fas fa-door-open"></i> @lesson.ClassroomName</div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Classes Section -->
+                <div class="col-md-12 class-section">
+                    <h4><i class="fas fa-users"></i> Classes</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="bg-success">
+                                <tr>
+                                    <th>Class</th>
+                                    @foreach (var day in distinctDays)
+                                    {
+                                        <th class="text-center day-column" data-day="@day.DayOfWeek">@day.DayShortName</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var classNames = Model.Select(p => p.ClassName).Distinct().OrderBy(n => n).ToList();
+                                }
+                                @foreach (var className in classNames)
+                                {
+                                    <tr class="class-row">
+                                        <td class="font-weight-bold">@className</td>
+                                        @foreach (var day in distinctDays)
+                                        {
+                                            <td class="day-column" data-day="@day.DayOfWeek">
+                                                @{
+                                                    var classLessons = Model.Where(p => p.ClassName == className && p.DayOfWeek == day.DayOfWeek)
+                                                        .OrderBy(p => p.LessonNumber)
+                                                        .ToList();
+                                                }
+                                                @if (classLessons.Any())
+                                                {
+                                                    <div class="day-schedule">
+                                                        @foreach (var lesson in classLessons)
+                                                        {
+                                                            <div class="lesson-item lesson-@lesson.LessonNumber" data-lesson="@lesson.LessonNumber">
+                                                                <span class="badge badge-success">L@(lesson.LessonNumber)</span>
+                                                                <div class="lesson-details">
+                                                                    <div><strong>@lesson.CourseCode</strong> - @lesson.CourseName</div>
+                                                                    <div><i class="fas fa-chalkboard-teacher"></i> @lesson.EducatorFullName</div>
+                                                                    <div><i class="fas fa-door-open"></i> @lesson.ClassroomName</div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .day-schedule {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .lesson-item {
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 0.85rem;
+            background-color: #f8f9fa;
+            border-left: 3px solid #007bff;
+            margin-bottom: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .class-row .lesson-item {
+            border-left-color: #28a745;
+        }
+        
+        .badge {
+            margin-right: 5px;
+        }
+        
+        .lesson-details {
+            width: 100%;
+            margin-top: 4px;
+        }
+        
+        .lesson-details div {
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.85rem;
+        }
+        
+        .lesson-details i {
+            width: 16px;
+            margin-right: 4px;
+            color: #666;
+        }
+        
+        .filter-controls {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize select2
+            $('.select2bs4').select2({
+                theme: 'bootstrap4'
+            });
+            
+            // Apply filters button click handler
+            $('#applyFilters').click(function() {
+                var selectedDay = $('#dayFilter').val();
+                var selectedLesson = $('#lessonFilter').val();
+                var showEducators = $('#showEducators').is(':checked');
+                var showClasses = $('#showClasses').is(':checked');
+                
+                // Handle day filtering
+                if (selectedDay === 'all') {
+                    $('.day-column').show();
+                } else {
+                    $('.day-column').hide();
+                    $('.day-column[data-day="' + selectedDay + '"]').show();
+                    // Always show first column (educator/class names)
+                    $('td:first-child').show();
+                    $('th:first-child').show();
+                }
+                
+                // Handle lesson filtering
+                if (selectedLesson === 'all') {
+                    $('.lesson-item').show();
+                } else {
+                    $('.lesson-item').hide();
+                    $('.lesson-item[data-lesson="' + selectedLesson + '"]').show();
+                }
+                
+                // Handle section visibility
+                if (showEducators) {
+                    $('.educator-section').show();
+                } else {
+                    $('.educator-section').hide();
+                }
+                
+                if (showClasses) {
+                    $('.class-section').show();
+                } else {
+                    $('.class-section').hide();
+                }
+            });
+        });
+    </script>
+}
