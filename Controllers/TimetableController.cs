@@ -14,11 +14,13 @@ namespace GWOTimetable.Controllers
     {
         private readonly Db12026Context _context;
         private readonly GWOSchedulerService _schedulerService;
+        private readonly AdvancedGWOSchedulerService _advancedSchedulerService;
 
         public TimetableController()
         {
             _context = new Db12026Context();
             _schedulerService = new GWOSchedulerService(_context);
+            _advancedSchedulerService = new AdvancedGWOSchedulerService(_context);
         }
 
 
@@ -180,7 +182,7 @@ namespace GWOTimetable.Controllers
                 // This is important since the optimization may take a long time
                 _ = Task.Run(async () =>
                 {
-                    await _schedulerService.RunSchedulerAsync(model.TimetableId);
+                    await _advancedSchedulerService.RunSchedulerAsync(model.TimetableId);
                 });
                 
                 return Ok(new { success = true, message = "Timetable scheduling process has started. You can check its status later." });

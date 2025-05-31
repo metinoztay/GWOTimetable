@@ -46,14 +46,14 @@ namespace GWOTimetable.Services
                 
                 // Run GWO algorithm
                 var placements = RunGWOAlgorithm(data, timetableId);
-                
+                /*
                 // Save results
                 await SavePlacementsAsync(placements, timetable);
                 
                 // Update timetable state to "Completed" (assuming stateId 3 is Completed)
                 timetable.TimetableStateId = 3;
                 timetable.UpdatedAt = DateTime.Now;
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();*/
                 
                 return true;
             }
