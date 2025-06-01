@@ -535,7 +535,15 @@ namespace GWOTimetable.Controllers
                 // 2. ADIM: Constraint ekleme işlemleri - artık silme işlemlerinden sonra gerçekleşiyor
                 if (changes.ConstraintsToAdd != null && changes.ConstraintsToAdd.Any())
                 {
-                    foreach (var constraint in changes.ConstraintsToAdd)
+                    // Tekrarlanan constraint'leri temizle (aynı hücreye birden fazla aynı constraint eklemeyi önle)
+                    var uniqueConstraints = changes.ConstraintsToAdd
+                        .GroupBy(c => new { c.ClassCourseId, c.DayId, c.LessonId, c.EducatorId, c.ClassId, c.ClassroomId })
+                        .Select(g => g.First())
+                        .ToList();
+                    
+                    Console.WriteLine($"Original constraints: {changes.ConstraintsToAdd.Count}, After duplicate removal: {uniqueConstraints.Count}");
+                    
+                    foreach (var constraint in uniqueConstraints)
                     {
                         try {
                             if (constraint.ClassCourseId == 0)

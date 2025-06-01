@@ -44,18 +44,17 @@ namespace GWOTimetable.Services
                 var workspaceId = timetable.WorkspaceId;
                 var data = await LoadRequiredDataAsync(workspaceId);
 
-                // GWO algoritmasını çalıştır
-                var courseBlocks = RunGWOAlgorithm(data, timetableId);
+                // GWO algoritmasını çalıştır ve sonucu doğrudan al
+                var result = RunGWOAlgorithm(data, timetableId);
                 
-                // Alpha kurdun yerleşimlerini al ve veritabanına kaydet
-                var alphaWolf = InitializeWolfPopulation(courseBlocks, data, 1).FirstOrDefault();
-                alphaWolf.Fitness = CalculateFitness(alphaWolf.Placements, courseBlocks, data);
+                // Alpha kurdun yerleşimlerini doğrudan RunGWOAlgorithm'den al
+                var alphaWolfPlacements = result.Item2; // RunGWOAlgorithm metodundan dönen alpha kurt yerleşimleri
                 
                 Console.WriteLine("Veritabanına kaydedilecek yerleşimler:");
-                PrintPlacements(alphaWolf.Placements, data);
+                PrintPlacements(alphaWolfPlacements, data);
                 
                 // Sonuçları kaydet
-                await SavePlacementsAsync(alphaWolf.Placements, timetable, data);
+                await SavePlacementsAsync(alphaWolfPlacements, timetable, data);
 
                 // Zaman tablosu durumunu "Completed" (varsayılan olarak stateId 3) olarak güncelle
                 timetable.TimetableStateId = 3;
@@ -130,7 +129,7 @@ namespace GWOTimetable.Services
             return data;
         }
 
-        private List<CourseBlock> RunGWOAlgorithm(SchedulingData data, int timetableId)
+        private Tuple<List<CourseBlock>, List<PlacementRepresentation>> RunGWOAlgorithm(SchedulingData data, int timetableId)
         {
             
             var lessonBlocks = CreateSortedLessonBlocks(data);
@@ -200,8 +199,57 @@ namespace GWOTimetable.Services
                 // 1. Tüm dersler yerleştirildi mi?
                 if (alphaWolf.Placements.Count == totalLessonsToPlace)
                 {
-                    allLessonsPlaced = true;
-                    Console.WriteLine($"Tüm dersler {iteration}. iterasyonda yerleştirildi!");
+                    // Tüm derslerin format kontrollerini yap
+                    bool allFormatsCorrect = true;
+                    foreach (var classCourse in data.ClassCourses.Where(cc => cc.ClassCourseId > 0))
+                    {
+                        int requiredHours = classCourse.Course.WeeklyHourCount;
+                        if (requiredHours <= 0) continue; // Sıfır saatlik dersleri atla
+                        
+                        var currentCoursePlacements = alphaWolf.Placements
+                            .Where(p => p.ClassCourseId == classCourse.ClassCourseId)
+                            .ToList();
+                        
+                        // Ders saati kontrolü
+                        if (currentCoursePlacements.Count != requiredHours)
+                        {
+                            allFormatsCorrect = false;
+                            break;
+                        }
+                        
+                        // Format kontrolü
+                        if (!string.IsNullOrEmpty(classCourse.Course.PlacementFormat))
+                        {
+                            List<int> originalFormatBlocks = classCourse.Course.PlacementFormat
+                                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(p => int.TryParse(p.Trim(), out int val) ? val : 0)
+                                .Where(val => val > 0)
+                                .ToList();
+                            
+                            if (originalFormatBlocks.Any() && originalFormatBlocks.Sum() == requiredHours)
+                            {
+                                var actualBlocks = GetActualPlacedBlocks(currentCoursePlacements, data);
+                                originalFormatBlocks.Sort();
+                                
+                                if (!originalFormatBlocks.SequenceEqual(actualBlocks))
+                                {
+                                    allFormatsCorrect = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Tüm dersler yerleştirilmiş ve format doğru ise, döngüden çık
+                    if (allFormatsCorrect)
+                    {
+                        allLessonsPlaced = true;
+                        Console.WriteLine($"Tüm dersler doğru formatta {iteration}. iterasyonda yerleştirildi! İyileştirme gerekmeyecek.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Tüm dersler {iteration}. iterasyonda yerleştirildi, ancak bazılarının formatı doğru değil.");
+                    }
                 }
                 
                 // Her 10 iterasyonda bir ilerlemeyi göster
@@ -217,19 +265,95 @@ namespace GWOTimetable.Services
             Console.WriteLine("\nEn iyi çözüm (Alpha kurt):");
             PrintPlacements(alphaWolf.Placements, data);
             
-            // Yerleştirilmeyen dersleri iyileştir
-            Console.WriteLine("\nYerleştirilmeyen dersler iyileştiriliyor...");
-            var improvedPlacements = ImproveUnplacedLessons(alphaWolf.Placements, data);
+            // Tüm derslerin doğru formatta yerleştirilip yerleştirilmediğini kontrol et
+            bool needsImprovement = false;
             
-            // İyileştirilmiş yerleşimleri yazdır
-            Console.WriteLine("\nİyileştirilmiş çözüm:");
-            PrintPlacements(improvedPlacements, data);
+            // Eğer iterasyonlar sırasında allLessonsPlaced=true olmuşsa, tüm derslerin doğru formatta yerleştirildiğini zaten biliyoruz
+            if (allLessonsPlaced)
+            {
+                Console.WriteLine("\nTüm dersler erken iterasyonda doğru formatta yerleştirildi. İyileştirme gerekmiyor.");
+                needsImprovement = false;
+            }
+            // İterasyonlar erken bitmemişse kontrol yapmaya devam et
+            else
+            {
+                // Yerleştirilmesi gereken toplam ders saatini ve yerleştirilen ders saatini karşılaştır
+                if (alphaWolf.Placements.Count < totalLessonsToPlace)
+                {
+                    needsImprovement = true;
+                    Console.WriteLine($"\nYerleştirilen ders sayısı ({alphaWolf.Placements.Count}) toplam ders sayısından ({totalLessonsToPlace}) az. İyileştirme uygulanacak.");
+                }
+                else
+                {
+                    // Ders formatı kontrolü
+                    foreach (var classCourse in data.ClassCourses.Where(cc => cc.ClassCourseId > 0))
+                    {
+                        int requiredHours = classCourse.Course.WeeklyHourCount;
+                        if (requiredHours <= 0) continue; // Sıfır saatlik dersleri atla
+                        
+                        var currentCoursePlacements = alphaWolf.Placements
+                            .Where(p => p.ClassCourseId == classCourse.ClassCourseId)
+                            .ToList();
+                        
+                        if (currentCoursePlacements.Count != requiredHours)
+                        {
+                            needsImprovement = true;
+                            Console.WriteLine($"{classCourse.Course.CourseName} dersi için yerleştirilen ders saati ({currentCoursePlacements.Count}) gerekli saatten ({requiredHours}) farklı. İyileştirme uygulanacak.");
+                            break;
+                        }
+                        
+                        // Format kontrolü
+                        if (!string.IsNullOrEmpty(classCourse.Course.PlacementFormat))
+                        {
+                            List<int> originalFormatBlocks = classCourse.Course.PlacementFormat
+                                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(p => int.TryParse(p.Trim(), out int val) ? val : 0)
+                                .Where(val => val > 0)
+                                .ToList();
+                            
+                            if (originalFormatBlocks.Any() && originalFormatBlocks.Sum() == requiredHours)
+                            {
+                                var actualBlocks = GetActualPlacedBlocks(currentCoursePlacements, data);
+                                originalFormatBlocks.Sort();
+                                
+                                if (!originalFormatBlocks.SequenceEqual(actualBlocks))
+                                {
+                                    needsImprovement = true;
+                                    Console.WriteLine($"{classCourse.Course.CourseName} dersi için blok formatı uyumsuz. Hedef: {string.Join(',', originalFormatBlocks)}, Mevcut: {string.Join(',', actualBlocks)}. İyileştirme uygulanacak.");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             
-            // Alpha kurdun yerleşimlerini güncelle
-            alphaWolf.Placements = improvedPlacements;
+            List<PlacementRepresentation> improvedPlacements;
             
-            // Bulunan en iyi çözümü (iyileştirilmiş yerleşimler) dön
-            return ConvertPlacementsToBlocks(alphaWolf.Placements, lessonBlocks, data);
+            if (needsImprovement)
+            {
+                // Yerleştirilmeyen veya formatı yanlış olan dersler var, iyileştir
+                Console.WriteLine("\nYerleştirilmeyen veya formatı yanlış olan dersler iyileştiriliyor...");
+                improvedPlacements = ImproveUnplacedLessons(alphaWolf.Placements, data);
+                
+                // İyileştirilmiş yerleşimleri yazdır
+                Console.WriteLine("\nİyileştirilmiş çözüm:");
+                PrintPlacements(improvedPlacements, data);
+                
+                // Alpha kurdun yerleşimlerini güncelle
+                alphaWolf.Placements = improvedPlacements;
+            }
+            else
+            {
+                Console.WriteLine("\nTüm dersler doğru formatta yerleştirilmiş. İyileştirme gerekmiyor.");
+                improvedPlacements = alphaWolf.Placements;
+            }
+            
+            // Bulunan en iyi çözümü (iyileştirilmiş yerleşimler) ve yerleşimleri dön
+            return new Tuple<List<CourseBlock>, List<PlacementRepresentation>>(
+                ConvertPlacementsToBlocks(alphaWolf.Placements, lessonBlocks, data),
+                alphaWolf.Placements
+            );
         }
         
         // Kurtların liderlerini (alpha, beta, delta) günceller
@@ -296,17 +420,35 @@ namespace GWOTimetable.Services
         private List<TimetablePlacement> ConvertToTimetablePlacements(List<PlacementRepresentation> placements, SchedulingData data, int timetableId)
         {
             var timetablePlacements = new List<TimetablePlacement>();
+            int skippedPlacements = 0;
+            
+            Console.WriteLine($"\nToplam dönüştürülecek yerleşim sayısı: {placements.Count}");
             
             foreach (var placement in placements)
             {
                 var classCourse = data.ClassCourses.FirstOrDefault(cc => cc.ClassCourseId == placement.ClassCourseId);
-                if (classCourse == null) continue;
+                if (classCourse == null) 
+                {
+                    Console.WriteLine($"HATA: ClassCourseId={placement.ClassCourseId} bulunamadı.");
+                    skippedPlacements++;
+                    continue;
+                }
                 
                 var day = data.Days.FirstOrDefault(d => d.DayId == placement.DayId);
-                if (day == null) continue;
+                if (day == null) 
+                {
+                    Console.WriteLine($"HATA: DayId={placement.DayId} bulunamadı.");
+                    skippedPlacements++;
+                    continue;
+                }
                 
                 var lesson = data.Lessons.FirstOrDefault(l => l.LessonId == placement.LessonId);
-                if (lesson == null) continue;
+                if (lesson == null) 
+                {
+                    Console.WriteLine($"HATA: LessonId={placement.LessonId} bulunamadı.");
+                    skippedPlacements++;
+                    continue;
+                }
                 
                 var classEntity = classCourse.Class;
                 var course = classCourse.Course;
@@ -314,8 +456,33 @@ namespace GWOTimetable.Services
                 var classroom = classCourse.Classroom;
                 
                 // Gerekli tüm verilerin var olduğundan emin olalım
-                if (classEntity == null || course == null || educator == null || classroom == null)
+                if (classEntity == null) 
+                {
+                    Console.WriteLine($"HATA: ClassCourseId={placement.ClassCourseId} için Class nesnesi bulunamadı.");
+                    skippedPlacements++;
                     continue;
+                }
+                
+                if (course == null) 
+                {
+                    Console.WriteLine($"HATA: ClassCourseId={placement.ClassCourseId} için Course nesnesi bulunamadı.");
+                    skippedPlacements++;
+                    continue;
+                }
+                
+                if (educator == null) 
+                {
+                    Console.WriteLine($"HATA: ClassCourseId={placement.ClassCourseId} için Educator nesnesi bulunamadı.");
+                    skippedPlacements++;
+                    continue;
+                }
+                
+                if (classroom == null) 
+                {
+                    Console.WriteLine($"HATA: ClassCourseId={placement.ClassCourseId} için Classroom nesnesi bulunamadı. Sınıf: {classEntity.ClassName}, Ders: {course.CourseName}");
+                    skippedPlacements++;
+                    continue;
+                }
                 
                 var timetablePlacement = new TimetablePlacement
                 {
@@ -337,6 +504,9 @@ namespace GWOTimetable.Services
                 
                 timetablePlacements.Add(timetablePlacement);
             }
+            
+            Console.WriteLine($"Toplam atılan yerleşim sayısı: {skippedPlacements}");
+            Console.WriteLine($"Veritabanına kaydedilecek yerleşim sayısı: {timetablePlacements.Count}");
             
             return timetablePlacements;
         }
