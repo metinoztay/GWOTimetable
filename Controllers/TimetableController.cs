@@ -92,6 +92,17 @@ namespace GWOTimetable.Controllers
                 }
             }
             
+            // Fetch days and lessons from the database for table generation
+            var days = await _context.Days
+                .Where(d => d.WorkspaceId == selectedWorkspaceId && d.LessonCount > 0)
+                .OrderBy(d => d.DayId)
+                .ToListAsync();
+                
+            var lessons = await _context.Lessons
+                .Where(l => l.WorkspaceId == selectedWorkspaceId)
+                .OrderBy(l => l.LessonNumber)
+                .ToListAsync();
+            
             // Prepare view data
             ViewBag.TimetableId = timetableId;
             ViewBag.Timetable = timetable;
@@ -99,6 +110,8 @@ namespace GWOTimetable.Controllers
             ViewBag.ItemId = itemId;
             ViewBag.Educators = educators;
             ViewBag.Classes = classes;
+            ViewBag.Days = days;
+            ViewBag.Lessons = lessons;
             ViewBag.ActiveTabId = "TimetableManagement";
             
             return View(placements);
@@ -227,12 +240,25 @@ namespace GWOTimetable.Controllers
                 .OrderBy(p => p.DayId)
                 .ThenBy(p => p.LessonNumber)
                 .ToListAsync();
+                
+            // Fetch days and lessons from the database for table generation
+            var days = await _context.Days
+                .Where(d => d.WorkspaceId == selectedWorkspaceId && d.LessonCount > 0)
+                .OrderBy(d => d.DayId)
+                .ToListAsync();
+                
+            var lessons = await _context.Lessons
+                .Where(l => l.WorkspaceId == selectedWorkspaceId)
+                .OrderBy(l => l.LessonNumber)
+                .ToListAsync();
             
             // Prepare view data
             ViewBag.TimetableId = timetableId;
             ViewBag.Timetable = timetable;
             ViewBag.Educators = educators;
             ViewBag.Classes = classes;
+            ViewBag.Days = days;
+            ViewBag.Lessons = lessons;
             ViewBag.ActiveTabId = "TimetableManagement";
             
             return View(placements);

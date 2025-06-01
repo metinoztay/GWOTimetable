@@ -65,15 +65,9 @@
                             <label>Filter by Day</label>
                             <select id="dayFilter" class="form-control select2bs4">
                                 <option value="all">All Days</option>
-                                @{
-                                    var distinctDays = Model.Select(p => new { p.DayId, p.DayOfWeek, p.DayShortName })
-                                        .Distinct()
-                                        .OrderBy(d => d.DayId)
-                                        .ToList();
-                                }
-                                @foreach (var day in distinctDays)
+                                @foreach (var day in ViewBag.Days)
                                 {
-                                    <option value="@day.DayOfWeek">@day.DayOfWeek (@day.DayShortName)</option>
+                                    <option value="@day.DayId">@day.DayOfWeek (@day.ShortName)</option>
                                 }
                             </select>
                         </div>
@@ -83,13 +77,7 @@
                             <label>Filter by Lesson</label>
                             <select id="lessonFilter" class="form-control select2bs4">
                                 <option value="all">All Lessons</option>
-                                @{
-                                    var distinctLessons = Model.Select(p => new { p.LessonNumber, p.StartTime, p.EndTime })
-                                        .Distinct()
-                                        .OrderBy(l => l.LessonNumber)
-                                        .ToList();
-                                }
-                                @foreach (var lesson in distinctLessons)
+                                @foreach (var lesson in ViewBag.Lessons)
                                 {
                                     <option value="@lesson.LessonNumber">Lesson @lesson.LessonNumber (@lesson.StartTime - @lesson.EndTime)</option>
                                 }
@@ -123,9 +111,9 @@
                             <thead class="bg-info">
                                 <tr>
                                     <th>Educator</th>
-                                    @foreach (var day in distinctDays)
+                                    @foreach (var day in ViewBag.Days)
                                     {
-                                        <th class="text-center day-column" data-day="@day.DayOfWeek">@day.DayShortName</th>
+                                        <th class="text-center day-column" data-day="@day.DayId">@day.ShortName</th>
                                     }
                                 </tr>
                             </thead>
@@ -137,11 +125,11 @@
                                 {
                                     <tr class="educator-row">
                                         <td class="font-weight-bold">@educatorName</td>
-                                        @foreach (var day in distinctDays)
+                                        @foreach (var day in ViewBag.Days)
                                         {
-                                            <td class="day-column" data-day="@day.DayOfWeek">
+                                            <td class="day-column" data-day="@day.DayId">
                                                 @{
-                                                    var educatorLessons = Model.Where(p => p.EducatorFullName == educatorName && p.DayOfWeek == day.DayOfWeek)
+                                                    var educatorLessons = Model.Where(p => p.EducatorFullName == educatorName && p.DayId == day.DayId)
                                                         .OrderBy(p => p.LessonNumber)
                                                         .ToList();
                                                 }
@@ -182,9 +170,9 @@
                             <thead class="bg-success">
                                 <tr>
                                     <th>Class</th>
-                                    @foreach (var day in distinctDays)
+                                    @foreach (var day in ViewBag.Days)
                                     {
-                                        <th class="text-center day-column" data-day="@day.DayOfWeek">@day.DayShortName</th>
+                                        <th class="text-center day-column" data-day="@day.DayId">@day.ShortName</th>
                                     }
                                 </tr>
                             </thead>
@@ -196,11 +184,11 @@
                                 {
                                     <tr class="class-row">
                                         <td class="font-weight-bold">@className</td>
-                                        @foreach (var day in distinctDays)
+                                        @foreach (var day in ViewBag.Days)
                                         {
-                                            <td class="day-column" data-day="@day.DayOfWeek">
+                                            <td class="day-column" data-day="@day.DayId">
                                                 @{
-                                                    var classLessons = Model.Where(p => p.ClassName == className && p.DayOfWeek == day.DayOfWeek)
+                                                    var classLessons = Model.Where(p => p.ClassName == className && p.DayId == day.DayId)
                                                         .OrderBy(p => p.LessonNumber)
                                                         .ToList();
                                                 }
@@ -310,8 +298,12 @@
                 if (selectedDay === 'all') {
                     $('.day-column').show();
                 } else {
+                    // Hide all day columns
                     $('.day-column').hide();
+                    
+                    // Show only the columns that match the selected day ID
                     $('.day-column[data-day="' + selectedDay + '"]').show();
+                    
                     // Always show first column (educator/class names)
                     $('td:first-child').show();
                     $('th:first-child').show();

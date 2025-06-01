@@ -127,40 +127,24 @@
                         <thead class="bg-info">
                             <tr>
                                 <th class="text-center">Hour</th>
-                                @{
-                                    var distinctDays = Model.Select(p => new { p.DayOfWeek, p.DayShortName })
-                                        .Distinct()
-                                        .OrderBy(d => {
-                                            // Order days of week properly
-                                            string[] daysOrder = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
-                                            return Array.IndexOf(daysOrder, d.DayOfWeek);
-                                        })
-                                        .ToList();
-                                }
-                                @foreach (var day in distinctDays)
+                                @foreach (var day in ViewBag.Days)
                                 {
-                                    <th class="text-center">@day.DayOfWeek (@day.DayShortName)</th>
+                                    <th class="text-center">@day.DayOfWeek (@day.ShortName)</th>
                                 }
                             </tr>
                         </thead>
                         <tbody>
-                            @{
-                                var distinctLessons = Model.Select(p => new { p.LessonNumber, p.StartTime, p.EndTime })
-                                    .Distinct()
-                                    .OrderBy(l => l.LessonNumber)
-                                    .ToList();
-                            }
-                            @foreach (var lesson in distinctLessons)
+                            @foreach (var lesson in ViewBag.Lessons)
                             {
                                 <tr>
                                     <td class="text-center bg-light">
                                         <strong>@lesson.LessonNumber</strong><br />
                                         <small>@lesson.StartTime - @lesson.EndTime</small>
                                     </td>
-                                    @foreach (var day in distinctDays)
+                                    @foreach (var day in ViewBag.Days)
                                     {
                                         var placement = Model.FirstOrDefault(p => 
-                                            p.DayOfWeek == day.DayOfWeek && 
+                                            p.DayId == day.DayId && 
                                             p.LessonNumber == lesson.LessonNumber);
                                             
                                         if (placement != null)
