@@ -156,6 +156,19 @@ namespace GWOTimetable.Controllers
             await _context.Workspaces.AddAsync(workspace);
             await _context.SaveChangesAsync();
 
+            List<Day> days = new List<Day>();
+            days.Add(new Day() { WorkspaceId = workspace.WorkspaceId, DayOfWeek = "Pazartesi", LessonCount = 8, ShortName = "Pzt" });
+            days.Add(new Day() { WorkspaceId = workspace.WorkspaceId, DayOfWeek = "Salı", LessonCount = 8, ShortName = "Sal" });
+            days.Add(new Day() { WorkspaceId = workspace.WorkspaceId, DayOfWeek = "Çarşamba", LessonCount = 8, ShortName = "Çar" });
+            days.Add(new Day() { WorkspaceId = workspace.WorkspaceId, DayOfWeek = "Perşembe", LessonCount = 8, ShortName = "Per" });
+            days.Add(new Day() { WorkspaceId = workspace.WorkspaceId, DayOfWeek = "Cuma", LessonCount = 8, ShortName = "Cum" });
+            days.Add(new Day() { WorkspaceId = workspace.WorkspaceId, DayOfWeek = "Cumartesi", LessonCount = 8, ShortName = "Cmt" });
+            days.Add(new Day() { WorkspaceId = workspace.WorkspaceId, DayOfWeek = "Pazar", LessonCount = 8, ShortName = "Paz" });
+
+            await _context.Days.AddRangeAsync(days);
+            await _context.SaveChangesAsync();
+
+
             return Ok(new { RedirectUrl = $"/Account/Login" });
         }
 

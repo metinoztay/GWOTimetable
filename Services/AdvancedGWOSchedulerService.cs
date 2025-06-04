@@ -36,7 +36,7 @@ namespace GWOTimetable.Services
                     return false;
 
                 // Zaman tablosu durumunu "Processing" (varsayılan olarak stateId 2) olarak güncelle
-                //timetable.TimetableStateId = 2;
+                timetable.TimetableStateId = 2;
                 timetable.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
 

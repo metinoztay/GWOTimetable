@@ -47,7 +47,7 @@
             <div class="form-group col-md-6">
                 <label>Updated At </label>
                 <input type="text" class="form-control"
-                    value="@(Model.UpdatedAt.HasValue ? Model.UpdatedAt.ToString() : "Not updated yet.")" disabled>
+                    value="@(Model.UpdatedAt.HasValue? Model.UpdatedAt.ToString() : "Not updated yet.")" disabled>
             </div>
 
             <div class="form-group col-md-6">
@@ -105,46 +105,7 @@
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-9">
-        <div class="card card-gray card-outline">
-            <div class="card-body p-0 table-responsive" id="constraintTableBody">
-                <div class="text-center py-5">
-                    <i class="fas fa-calendar-days fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">Please select a course from the options panel to view the timetable</h5>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="card card-gray card-outline">
-            <div class="card-header d-flex align-items-center">
-                <h3 class="card-title pt-1 pb-1"><i class="fas fa-calendar-days"></i>&nbsp; Options</h3>
-            </div>
-            <div class="card-body">
-                @foreach (var cc in Model.ClassCourses)
-                {
-                    <button type="button" class="btn btn-outline-primary btn-block constraint-option-button mb-2" 
-                            data-classcourse-id="@cc.ClassCourseId" 
-                            data-course-id="@Model.CourseId"
-                            data-course-code="@Model.CourseCode"
-                            data-course-name="@Model.CourseName"
-                            data-classroom="@cc.Classroom.ClassroomName">
-                        (@cc.Class.ClassName) - @cc.Classroom.ClassroomName<br>
-                        @cc.Educator.FirstName @cc.Educator.LastName
-                    </button>
-                }
-                <button type="button" class="btn btn-outline-danger btn-block pt-3 pb-3 constraint-option-button" 
-                        data-classcourse-id="0" 
-                        data-course-id="@Model.CourseId"
-                        data-course-code="CLOSE"
-                        data-course-name="Close Time Slot"
-                        data-classroom="">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="modal fade" id="deleteCourseModal" tabindex="-1" role="dialog" aria-labelledby="deleteCourseModalLabel"
     aria-hidden="true">
@@ -372,55 +333,55 @@
             $('.constraint-option-button').on('click', function () {
                 const courseId = $(this).data('course-id');
                 const classCourseId = $(this).data('classcourse-id');
-                
+
                 // Seçili butonun görsel stilini güncelle
                 $('.constraint-option-button').removeClass('active');
                 $(this).addClass('active');
-                
+
                 // Seçili buton referansını sakla
                 selectedConstraintButton = $(this);
-                
+
                 // AJAX ile kısıtlama tablosunu yükle
                 loadConstraints(courseId, classCourseId);
             });
-            
+
             // İlk kısıtlamayı yükleme fonksiyonu
             function loadConstraints(courseId, classCourseId) {
                 const $constraintTableBody = $('#constraintTableBody');
-                
+
                 // Yükleme animasyonunu göster
                 $constraintTableBody.html(`
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="sr-only">Loading...</span>
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                            <h5 class="mt-2">Loading constraints...</h5>
                         </div>
-                        <h5 class="mt-2">Loading constraints...</h5>
-                    </div>
-                `);
-                
+                    `);
+
                 // Kısıtlama verilerini hazırla
                 const constraintData = {
                     CourseId: courseId,
                     ClassCourseId: classCourseId
                 };
-                
+
                 // AJAX isteği ile kısıtlamaları yükle
                 $.ajax({
                     url: '/Constraint/GetConstraintsForCourse',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(constraintData),
-                    success: function(response) {
+                    success: function (response) {
                         $constraintTableBody.html(response);
                     },
-                    error: function(xhr, status, error) {
+                    error: function (xhr, status, error) {
                         $constraintTableBody.html(`
-                            <div class="text-center py-5">
-                                <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
-                                <h5 class="text-danger">Error loading constraints</h5>
-                                <p>${xhr.responseText ? xhr.responseText : error}</p>
-                            </div>
-                        `);
+                                <div class="text-center py-5">
+                                    <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+                                    <h5 class="text-danger">Error loading constraints</h5>
+                                    <p>${xhr.responseText ? xhr.responseText : error}</p>
+                                </div>
+                            `);
                     }
                 });
             }
@@ -429,11 +390,11 @@
         // Global scope constraint manipulation functions
         function toggleConstraint(element, dayId, lessonId) {
             console.log("toggleConstraint called for day:", dayId, "lesson:", lessonId);
-            
+
             // Check if we have an active "Close" button or a classCourse button
             const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
             const courseName = selectedConstraintButton ? selectedConstraintButton.data('course-name') : '';
-            
+
             if (!selectedConstraintButton) {
                 Swal.fire({
                     toast: true,
@@ -445,9 +406,9 @@
                 });
                 return;
             }
-            
+
             const hasConstraint = $(element).css('background-color') !== 'rgb(255, 255, 255)';
-            
+
             if (hasConstraint) {
                 RemoveConstraintLocal(element, dayId, lessonId);
             } else {
@@ -457,41 +418,41 @@
 
         function AddConstraintLocal(element, dayId, lessonId) {
             console.log("AddConstraintLocal called for day:", dayId, "lesson:", lessonId);
-            
+
             // Seçili kısıtlama tipine göre ClassCourseId değerini belirle
             const classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
             const courseId = parseInt(currentCourseId);
-            
+
             var constraintData = {
                 DayId: dayId,
                 LessonId: lessonId,
                 ClassCourseId: classCourseId,
                 CourseId: courseId
             };
-            
+
             // Unsaved changes flag'ini aktif et
             hasUnsavedChanges = true;
             $('#constraintChangeAlert').show();
-            
+
             // Constraint data'sını local değişkene kaydet
-            var existingConstraintIndex = constraintsToRemove.findIndex(item => 
+            var existingConstraintIndex = constraintsToRemove.findIndex(item =>
                 item.DayId === dayId && item.LessonId === lessonId && item.CourseId === courseId
             );
-            
+
             if (existingConstraintIndex !== -1) {
                 // Eğer aynı constraint remove listesinde varsa, onu oradan kaldır
                 constraintsToRemove.splice(existingConstraintIndex, 1);
             } else {
                 // constraintsToAdd listesinde zaten yoksa ekle
-                const existsInAdd = constraintsToAdd.some(item => 
+                const existsInAdd = constraintsToAdd.some(item =>
                     item.DayId === dayId && item.LessonId === lessonId && item.CourseId === courseId
                 );
-                
+
                 if (!existsInAdd) {
                     constraintsToAdd.push(constraintData);
                 }
             }
-            
+
             // Hücreye seçili kısıtlama rengini ve data-unsaved attribute'unu ekle
             if (classCourseId === 0) {
                 // 'Close' button selected (kırmızı - kapalı hücre)
@@ -500,9 +461,9 @@
                 // Normal course button selected (mavi - ders atama)
                 $(element).css('background-color', '#6FC276'); // Unsaved course cell
             }
-            
+
             $(element).attr('data-unsaved', 'true');
-            
+
             // Kısıtlama bilgisini göster
             if (classCourseId === 0) {
                 $(element).text("Not Available");
@@ -513,10 +474,10 @@
                 $(element).attr('title', courseInfo);
             }
         }
-        
+
         function RemoveConstraintLocal(element, dayId, lessonId) {
             console.log("RemoveConstraintLocal called for day:", dayId, "lesson:", lessonId);
-            
+
             var constraintData = {};
             try {
                 constraintData = {
@@ -528,42 +489,42 @@
                 console.error("Error parsing constraint data:", error);
                 return;
             }
-            
+
             // Unsaved changes flag'ini aktif et
             hasUnsavedChanges = true;
             $('#constraintChangeAlert').show();
-            
+
             // Local değişkenleri güncelle
-            var existingAddIndex = constraintsToAdd.findIndex(item => 
+            var existingAddIndex = constraintsToAdd.findIndex(item =>
                 item.DayId === dayId && item.LessonId === lessonId && item.CourseId === constraintData.CourseId
             );
-            
+
             if (existingAddIndex !== -1) {
                 // Eğer aynı constraint add listesinde varsa, onu oradan kaldır
                 constraintsToAdd.splice(existingAddIndex, 1);
             } else {
                 // constraintsToRemove listesinde zaten yoksa ekle
-                const existsInRemove = constraintsToRemove.some(item => 
+                const existsInRemove = constraintsToRemove.some(item =>
                     item.DayId === dayId && item.LessonId === lessonId && item.CourseId === constraintData.CourseId
                 );
-                
+
                 if (!existsInRemove) {
                     constraintsToRemove.push(constraintData);
                 }
             }
-            
+
             // Hücreyi temizle ve data-unsaved attribute'unu güncelle
             $(element).css('background-color', 'rgb(255, 255, 255)');
             $(element).text('');
             $(element).attr('title', '');
             $(element).attr('data-unsaved', 'true');
         }
-        
+
         function saveAllChanges() {
             if (!hasUnsavedChanges) {
                 return;
             }
-            
+
             // Confirm before saving changes
             Swal.fire({
                 title: 'Save Changes?',
@@ -576,31 +537,31 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $('.spinner-overlay').css('display', 'flex');
-                    
+
                     var changes = {
                         ConstraintsToAdd: constraintsToAdd,
                         ConstraintsToRemove: constraintsToRemove,
                         CourseId: parseInt(currentCourseId)
                     };
-                    
+
                     $.ajax({
                         url: '/Constraint/SaveAllCourseConstraints',
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify(changes),
-                        success: function(response) {
+                        success: function (response) {
                             $('.spinner-overlay').hide();
-                            
+
                             // Reset local tracking
                             constraintsToAdd = [];
                             constraintsToRemove = [];
                             hasUnsavedChanges = false;
                             $('#constraintChangeAlert').hide();
-                            
+
                             // Update UI
-                            $('[data-unsaved="true"]').each(function() {
+                            $('[data-unsaved="true"]').each(function () {
                                 $(this).attr('data-unsaved', 'false');
-                                
+
                                 // Set the correct background color for saved cells
                                 if ($(this).css('background-color') === 'rgb(111, 194, 118)') { // Unsaved course
                                     $(this).css('background-color', '#ADD8E6'); // Saved course
@@ -610,7 +571,7 @@
                                     // Cell was cleared, keep it white
                                 }
                             });
-                            
+
                             Swal.fire({
                                 toast: true,
                                 icon: 'success',
@@ -620,18 +581,18 @@
                                 timer: 3000
                             });
                         },
-                        error: function(xhr, status, error) {
+                        error: function (xhr, status, error) {
                             $('.spinner-overlay').hide();
                             console.error("AJAX hatası:", status, error);
-                            
+
                             // XHR yanıtını ve hata detaylarını yazdır
                             console.error("XHR response:", xhr.responseText);
-                            
+
                             var errorMessage = "An unknown error occurred while saving changes.";
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
                             }
-                            
+
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
@@ -642,12 +603,12 @@
                 }
             });
         }
-        
+
         function cancelChanges() {
             if (!hasUnsavedChanges) {
                 return;
             }
-            
+
             Swal.fire({
                 title: 'Cancel Changes?',
                 text: "All unsaved changes will be lost. Do you want to continue?",
@@ -659,23 +620,23 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     console.log("Değişiklikler iptal ediliyor");
-                    
+
                     // constraintsToAdd listesindeki tüm hücreler için değişiklikleri geri al
-                    constraintsToAdd.forEach(function(constraint) {
+                    constraintsToAdd.forEach(function (constraint) {
                         var cell = $(`#cell-${constraint.DayId}-${constraint.LessonId}`);
                         cell.css('background-color', 'rgb(255, 255, 255)');
                         cell.text('');
                         cell.attr('title', '');
                         cell.attr('data-unsaved', 'false');
                     });
-                    
+
                     // constraintsToRemove listesindeki tüm hücreler için orijinal değerleri geri yükle
-                    constraintsToRemove.forEach(function(constraint) {
+                    constraintsToRemove.forEach(function (constraint) {
                         var cell = $(`#cell-${constraint.DayId}-${constraint.LessonId}`);
-                        
+
                         // Determine the constraint type (you might need additional data to determine this correctly)
                         var classCourseId = selectedConstraintButton ? parseInt(selectedConstraintButton.data('classcourse-id')) : 0;
-                        
+
                         if (classCourseId === 0) {
                             cell.css('background-color', '#ffe6e6'); // Closed cell
                             cell.text('Not Available');
@@ -686,16 +647,16 @@
                             cell.text(courseInfo);
                             cell.attr('title', courseInfo);
                         }
-                        
+
                         cell.attr('data-unsaved', 'false');
                     });
-                    
+
                     // Reset tracking variables
                     constraintsToAdd = [];
                     constraintsToRemove = [];
                     hasUnsavedChanges = false;
                     $('#constraintChangeAlert').hide();
-                    
+
                     Swal.fire({
                         toast: true,
                         icon: 'info',
@@ -720,33 +681,33 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $('.spinner-overlay').css('display', 'flex');
-                    
+
                     var courseData = {
                         CourseId: parseInt(currentCourseId)
                     };
-                    
+
                     $.ajax({
                         url: '/Constraint/ClearAllCourseConstraints',
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify(courseData),
-                        success: function(response) {
+                        success: function (response) {
                             $('.spinner-overlay').hide();
-                            
+
                             // Reset all constraint cells
-                            $('.constraint-cell').each(function() {
+                            $('.constraint-cell').each(function () {
                                 $(this).css('background-color', 'rgb(255, 255, 255)');
                                 $(this).text('');
                                 $(this).attr('title', '');
                                 $(this).attr('data-unsaved', 'false');
                             });
-                            
+
                             // Reset tracking variables
                             constraintsToAdd = [];
                             constraintsToRemove = [];
                             hasUnsavedChanges = false;
                             $('#constraintChangeAlert').hide();
-                            
+
                             Swal.fire({
                                 toast: true,
                                 icon: 'success',
@@ -756,15 +717,15 @@
                                 timer: 3000
                             });
                         },
-                        error: function(xhr, status, error) {
+                        error: function (xhr, status, error) {
                             $('.spinner-overlay').hide();
                             console.error("AJAX Error:", status, error);
-                            
+
                             var errorMessage = "An unknown error occurred while clearing constraints.";
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
                             }
-                            
+
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
@@ -780,9 +741,9 @@
     <style>
         /* 'Closed' butonu üzerine gelince yazı rengini beyaz yap */
         .constraint-option-button.btn-outline-danger:hover {
-            color: white !important; 
+            color: white !important;
         }
-        
+
         /* Active class for constraint buttons */
         .constraint-option-button.active {
             box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, 0.5);
