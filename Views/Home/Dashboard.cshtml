@@ -1,114 +1,185 @@
 @using System.Security.Claims;
 @{
-    ViewBag.MenuHead = "Dashboard";
+    ViewBag.MenuHead = "";
     ViewBag.Controller = "";
-    ViewBag.Action = "Dashboard";
-    ViewBag.Title = "Dashboard";
+    ViewBag.Action = "";
+    ViewBag.Title = "";
 }
 
-<div class="container py-4">
-    <!-- Welcome Header -->
-    <div class="row mb-4">
-        <div class="col-12 text-center">
-            <h1 class="display-4">GWO Timetable System</h1>
-            <h3 class="text-muted">@User.FindFirstValue("WorkspaceId")</h3>
-            <p class="lead">Welcome to your timetable management system</p>
-        </div>
-    </div>
+<style>
+    .dashboard-container {
+        padding: 2.5rem 0;
+        background-color: #f8f9fa;
+    }
+    
+    .welcome-section {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        border-radius: 15px;
+        padding: 2.5rem;
+        margin-bottom: 3rem;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .welcome-text {
+        font-weight: 300;
+        max-width: 600px;
+        margin: 0 auto;
+        opacity: 0.9;
+    }
+    
+    .dashboard-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 2rem;
+        height: 100%;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .card-icon {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin: 0 auto 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .card-icon-primary { background-color: rgba(13, 110, 253, 0.1); }
+    .card-icon-success { background-color: rgba(25, 135, 84, 0.1); }
+    .card-icon-danger { background-color: rgba(220, 53, 69, 0.1); }
+    .card-icon-info { background-color: rgba(13, 202, 240, 0.1); }
+    .card-icon-secondary { background-color: rgba(108, 117, 125, 0.1); }
+    .card-icon-warning { background-color: rgba(255, 193, 7, 0.1); }
+    
+    .dashboard-card .card-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .dashboard-card .card-text {
+        color: #6c757d;
+    }
+    
+    .dashboard-card .btn {
+        border-radius: 50px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dashboard-card:hover .card-icon {
+        transform: scale(1.1);
+    }
+</style>
 
-    <!-- Navigation Cards -->
-    <div class="row g-4">
-        <!-- Classes Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-users fa-3x text-primary"></i>
-                    </div>
-                    <h5 class="card-title text-center">Classes</h5>
-                    <p class="card-text">View, edit, and manage class information and constraints.</p>
-                    <div class="mt-auto text-center">
-                        <a href="@Url.Action("Management", "Class")" class="btn btn-outline-primary">Go to Classes</a>
+<div class="dashboard-container">
+    <div class="container">        
+
+        <!-- Navigation Cards -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <!-- Classes Card -->
+            <div class="col">
+                <div class="card dashboard-card">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="card-icon card-icon-primary">
+                            <i class="fas fa-users fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="card-title text-center">Classes</h5>
+                        <p class="card-text text-center mb-4">View, edit, and manage class information and constraints.</p>
+                        <div class="mt-auto text-center">
+                            <a href="@Url.Action("Management", "Class")" class="btn btn-primary w-75">Go to Classes</a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Courses Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-book fa-3x text-success"></i>
-                    </div>
-                    <h5 class="card-title text-center">Courses</h5>
-                    <p class="card-text">Manage course contents and set course constraints.</p>
-                    <div class="mt-auto text-center">
-                        <a href="@Url.Action("Management", "Course")" class="btn btn-outline-success">Go to Courses</a>
+            <!-- Courses Card -->
+            <div class="col">
+                <div class="card dashboard-card">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="card-icon card-icon-success">
+                            <i class="fas fa-book fa-2x text-success"></i>
+                        </div>
+                        <h5 class="card-title text-center">Courses</h5>
+                        <p class="card-text text-center mb-4">Manage course contents and set course constraints.</p>
+                        <div class="mt-auto text-center">
+                            <a href="@Url.Action("Management", "Course")" class="btn btn-success w-75">Go to Courses</a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Classrooms Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-door-open fa-3x text-danger"></i>
-                    </div>
-                    <h5 class="card-title text-center">Classrooms</h5>
-                    <p class="card-text">Manage classroom resources and availability.</p>
-                    <div class="mt-auto text-center">
-                        <a href="@Url.Action("Management", "Classroom")" class="btn btn-outline-danger">Go to Classrooms</a>
+            <!-- Classrooms Card -->
+            <div class="col">
+                <div class="card dashboard-card">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="card-icon card-icon-danger">
+                            <i class="fas fa-door-open fa-2x text-danger"></i>
+                        </div>
+                        <h5 class="card-title text-center">Classrooms</h5>
+                        <p class="card-text text-center mb-4">Manage classroom resources and availability.</p>
+                        <div class="mt-auto text-center">
+                            <a href="@Url.Action("Management", "Classroom")" class="btn btn-danger w-75">Go to Classrooms</a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Educators Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-chalkboard-teacher fa-3x text-info"></i>
-                    </div>
-                    <h5 class="card-title text-center">Educators</h5>
-                    <p class="card-text">View educator information and manage availability constraints.</p>
-                    <div class="mt-auto text-center">
-                        <a href="@Url.Action("Management", "Educator")" class="btn btn-outline-info">Go to Educators</a>
+            <!-- Educators Card -->
+            <div class="col">
+                <div class="card dashboard-card">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="card-icon card-icon-info">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-info"></i>
+                        </div>
+                        <h5 class="card-title text-center">Educators</h5>
+                        <p class="card-text text-center mb-4">View educator information and manage availability constraints.</p>
+                        <div class="mt-auto text-center">
+                            <a href="@Url.Action("Management", "Educator")" class="btn btn-info w-75 text-white">Go to Educators</a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Time Settings Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-clock fa-3x text-secondary"></i>
-                    </div>
-                    <h5 class="card-title text-center">Time Settings</h5>
-                    <p class="card-text">Configure time blocks and scheduling parameters.</p>
-                    <div class="mt-auto text-center">
-                        <a href="@Url.Action("Management", "Time")" class="btn btn-outline-secondary">Go to Time Settings</a>
+            <!-- Time Settings Card -->
+            <div class="col">
+                <div class="card dashboard-card">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="card-icon card-icon-secondary">
+                            <i class="fas fa-clock fa-2x text-secondary"></i>
+                        </div>
+                        <h5 class="card-title text-center">Time Settings</h5>
+                        <p class="card-text text-center mb-4">Configure time blocks and scheduling parameters.</p>
+                        <div class="mt-auto text-center">
+                            <a href="@Url.Action("Management", "Time")" class="btn btn-secondary w-75">Go to Time Settings</a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Timetables Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-calendar-alt fa-3x text-warning"></i>
-                    </div>
-                    <h5 class="card-title text-center">Timetables</h5>
-                    <p class="card-text">Generate and view optimized timetables.</p>
-                    <div class="mt-auto text-center">
-                        <a href="@Url.Action("Management", "Timetable")" class="btn btn-outline-warning">Go to Timetables</a>
+            <!-- Timetables Card -->
+            <div class="col">
+                <div class="card dashboard-card">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="card-icon card-icon-warning">
+                            <i class="fas fa-calendar-alt fa-2x text-warning"></i>
+                        </div>
+                        <h5 class="card-title text-center">Timetables</h5>
+                        <p class="card-text text-center mb-4">Generate and view optimized timetables.</p>
+                        <div class="mt-auto text-center">
+                            <a href="@Url.Action("Management", "Timetable")" class="btn btn-warning w-75 text-dark">Go to Timetables</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -116,14 +187,3 @@
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Add hover effect for cards
-            $(".card").hover(
-                function() { $(this).addClass("shadow").css("transform", "translateY(-5px)"); },
-                function() { $(this).removeClass("shadow").css("transform", ""); }
-            );
-        });
-    </script>
-}
